@@ -1,0 +1,38 @@
+@startuml
+participant "Sender" as sender
+participant "OnMessage" as onMessage
+participant "IsMessageForSelf" as isSelf
+participant "ProcessMessageForSelf" as processSelf
+participant "ShouldBroadcastToChunk" as shouldBroadcast
+participant "BroadcastMessageToChunk" as broadcast
+participant "ForwardMessageToPeer" as forward
+participant "DontHavePeer" as noPeer
+participant "SendToPeers" as sendPeers
+participant "MistPeerData" as peerData
+
+sender -> onMessage: data, senderId
+onMessage -> isSelf: message
+isSelf -> onMessage: isForSelf
+
+alt Is Message For Self
+    onMessage -> processSelf: message, senderId
+else Should Broadcast To Chunk
+    onMessage -> shouldBroadcast: message
+    shouldBroadcast -> onMessage: shouldBroadcast
+    onMessage -> broadcast: message, senderId, data
+    broadcast -> sendPeers: peerIds, data, senderId
+    sendPeers -> peerData: Send(data)
+else Forward Message To Peer
+    onMessage -> forward: message, data, senderId
+    forward -> peerData: GetPeer(targetId)
+    alt Peer Exists
+        peerData -> forward: peer
+        forward -> peerData: Send(data)
+    else Peer Does Not Exist
+        forward -> noPeer: data, senderId, message
+        noPeer -> sendPeers: peerData, data, senderId
+        sendPeers -> peerData: Send(data)
+    end
+end
+
+@enduml

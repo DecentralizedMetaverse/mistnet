@@ -1,0 +1,111 @@
+version: 1
+
+messages:
+  - name: RPC
+    fields:
+      - name: Method
+        type: string
+      - name: Args
+        type: string
+
+  - name: Location
+    fields:
+      - name: ObjId
+        type: string
+      - name: Position
+        type: Vector3
+      - name: Rotation
+        type: Vector3
+      - name: Time
+        type: float
+
+  - name: Animation
+    fields:
+      - name: ObjId
+        type: string
+      - name: State
+        type: string         
+
+  - name: Message
+    fields:
+      - name: Content
+        type: string
+
+  - name: Log
+    fields:
+      - name: Content
+        type: string
+        
+  - name: ObjectInstantiate
+    fields:
+      - name: ObjId
+        type: string      
+      - name: Position
+        type: Vector3
+      - name: Rotation
+        type: Vector3      
+      - name: PrefabAddress
+        type: string
+
+  - name: ObjectChange
+    fields:
+      - name: ObjId
+        type: string      
+
+  - name: Signaling
+    fields:
+      - name: Data
+        type: string
+  
+  - name: SignalingRequest
+    fields:
+      - name: TargetId
+        type: string
+        
+  - name: SignalingResponse
+    fields:
+      - name: TargetId
+        type: string
+      - name: Request
+        type: string  
+        
+  - name: DisconnectRequest
+    
+  - name: DisconnectResponse    
+    
+  - name: PeerData
+    fields:
+      - name: Id
+        type: string
+      - name: Chunk
+        type: string
+      - name: Position
+        type: Vector3
+      - name: CurrentConnectNum
+        type: int
+      - name: MinConnectNum
+        type: int
+      - name: LimitConnectNum
+        type: int
+      - name: MaxConnectNum
+        type: int
+        
+  - name: Ping
+    fields:
+      - name: Time
+        type: long
+        
+  - name: Pong
+    fields:
+      - name: Time
+        type: long       
+        
+  - name: VR
+    fields:
+      - name: 
+        type: string
+        
+  - name: Error
+    fields:
+      - name: Message
+        type: string

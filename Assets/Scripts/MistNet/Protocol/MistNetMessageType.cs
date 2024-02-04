@@ -1,0 +1,19 @@
+public enum MistNetMessageType
+{
+    RPC,
+    Location,
+    Animation,
+    Message,
+    Log,
+    ObjectInstantiate,
+    ObjectChange,
+    Signaling,
+    SignalingRequest,
+    SignalingResponse,
+    DisconnectRequest,
+    DisconnectResponse,
+    PeerData,
+    Ping,
+    Pong,
+    Error,
+}
