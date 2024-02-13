@@ -15,7 +15,7 @@ namespace MistNet
     public class MistManager : MonoBehaviour
     {
         private static readonly float WaitConnectingTimeSec = 3f;
-        public MistConfig Config = new();
+        public readonly MistConfig Config = new();
         public static MistManager I;
 
         public MistPeerData MistPeerData;
@@ -72,15 +72,11 @@ namespace MistNet
                 Debug.Log($"[SEND][{type.ToString()}] {targetId} -> {message.TargetId}");
             }
 
-            //if (MistPeerData.IsConnected(targetId))
+            if (MistPeerData.IsConnected(targetId))
             {
                 var peerData = MistPeerData.GetAllPeer[targetId];
                 peerData.Peer.Send(sendData).Forget();
             }
-            // else
-            // {
-            //     Debug.LogError($"[Send] peerId: {targetId} is not found");
-            // }
         }
 
         public void SendAll(MistNetMessageType type, byte[] data, string chunk = "")

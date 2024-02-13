@@ -202,25 +202,14 @@ namespace MistNet
         {
             await UniTask.WaitUntil(() => _dataChannel != null && _dataChannel.ReadyState == RTCDataChannelState.Open);
 
-            // if (_dataChannel == null)
-            // {
-            //     Debug.LogWarning("dataChannel is null");
-            //     return;
-            // }
-            //
-            // if (_dataChannel.ReadyState != RTCDataChannelState.Open)
-            // {
-            //     Debug.LogWarning("dataChannel is not open");
-            //     return;
-            // }
-
             MistStats.I.TotalSendBytes += data.Length;
             _dataChannel.Send(data);
         }
 
         public void Close()
         {
-            Connection.Close();
+            // DataChannelを閉じる
+            _dataChannel.Close();
         }
 
         private void OnIceConnectionChange(RTCIceConnectionState state)
@@ -246,6 +235,8 @@ namespace MistNet
         private void OnCloseDataChannel()
         {
             Debug.Log($"[Signaling][DataChannel] Finalize -> {Id}");
+            // PeerConnectionを閉じる
+            Connection.Close();
         }
 
         private void OnMessageDataChannel(byte[] data)

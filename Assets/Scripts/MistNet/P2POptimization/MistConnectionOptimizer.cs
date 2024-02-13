@@ -110,7 +110,7 @@ namespace MistNet
             var table = MistPeerData.I.GetAllPeer;
             foreach (var kv in table)
             {
-                text += $"{kv.Key} {kv.Value.Chunk} {kv.Value.CurrentConnectNum} {kv.Value.MaxConnectNum}\n";
+                text += $"{kv.Key} {kv.Value.Chunk} {kv.Value.CurrentConnectNum} {kv.Value.MaxConnectNum} {kv.Value.State}\n";
             }
 
             Debug.Log(text);

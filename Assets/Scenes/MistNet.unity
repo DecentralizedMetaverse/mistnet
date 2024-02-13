@@ -790,6 +790,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -20
       objectReference: {fileID: 0}
+    - target: {fileID: 1356439322518889549, guid: abb203be92da0fd47b5814dfd39149e6,
+        type: 3}
+      propertyPath: filters
+      value: STATS or DataChannel
+      objectReference: {fileID: 0}
     - target: {fileID: 4416884298952503070, guid: abb203be92da0fd47b5814dfd39149e6,
         type: 3}
       propertyPath: filters
