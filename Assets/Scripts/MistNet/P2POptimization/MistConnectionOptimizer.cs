@@ -177,7 +177,7 @@ namespace MistNet
             }
             
             // 切断リストに追加する
-            // AddDisconnectListAndDelayCancel(sourceId).Forget();
+            AddDisconnectListAndDelayCancel(sourceId).Forget();
         }
 
         private void OnDisconnectResponse(byte[] data, string sourceId, string _)
