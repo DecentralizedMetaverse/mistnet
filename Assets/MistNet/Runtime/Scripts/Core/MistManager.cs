@@ -112,10 +112,16 @@ namespace MistNet
             _onMessageDict.Add(messageType, function);
         }
 
-        public void AddRPC(Delegate function)
+        public void AddRPC(string key, Delegate function)
         {
-            _functions.Add(function.Method.Name, function);
-            _functionArgsLength.Add(function.Method.Name, function.GetMethodInfo().GetParameters().Length);
+            _functions.Add(key, function);
+            _functionArgsLength.Add(key, function.GetMethodInfo().GetParameters().Length);
+        }
+        
+        public void RemoveRPC(string key)
+        {
+            _functions.Remove(key);
+            _functionArgsLength.Remove(key);
         }
 
         public void RPCAll(string key, params object[] args)
