@@ -36,9 +36,9 @@ namespace MistNet
 
         private void Start()
         {
-            MistManager.I.Register(MistNetMessageType.DisconnectRequest, OnDisconnectRequest);
-            MistManager.I.Register(MistNetMessageType.DisconnectResponse, OnDisconnectResponse);
-            MistManager.I.Register(MistNetMessageType.PeerData, OnPeerTableResponse);
+            MistManager.I.AddRPC(MistNetMessageType.DisconnectRequest, OnDisconnectRequest);
+            MistManager.I.AddRPC(MistNetMessageType.DisconnectResponse, OnDisconnectResponse);
+            MistManager.I.AddRPC(MistNetMessageType.PeerData, OnPeerTableResponse);
 
             SendPeerTableWithDelay().Forget();
         }

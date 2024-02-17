@@ -1,8 +1,12 @@
 ﻿using MemoryPack;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
 using Cysharp.Threading.Tasks;
+using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.ResourceLocations;
@@ -25,6 +29,9 @@ namespace MistNet
         private readonly Dictionary<MistNetMessageType, Action<byte[], string, string>>
             _onMessageDict = new(); // targetId, viaId
 
+        private static Dictionary<string, Delegate> _functions = new();
+
+
         public void Awake()
         {
             MistPeerData = new();
@@ -33,9 +40,14 @@ namespace MistNet
             Config.ReadConfig();
         }
 
+        private void Start()
+        {
+            AddRPC(MistNetMessageType.RPC, OnRPC);
+        }
+
         public void OnDestroy()
         {
-            MistPeerData.Finalize();
+            MistPeerData.AllClose();
             Config.WriteConfig();
         }
 
@@ -45,9 +57,7 @@ namespace MistNet
         /// <param name="type"></param>
         /// <param name="data"></param>
         /// <param name="targetId"></param>
-        /// <param name="viaId">廃止</param>
-        /// <param name="chunk"></param>
-        public void Send(MistNetMessageType type, byte[] data, string targetId, string viaId = "", string chunk = "")
+        public void Send(MistNetMessageType type, byte[] data, string targetId)
         {
             Debug.Log($"[SEND][{type.ToString()}] -> {targetId}");
 
@@ -57,7 +67,6 @@ namespace MistNet
                 Data = data,
                 TargetId = targetId,
                 Type = type,
-                Chunk = chunk,
             };
             var sendData = MemoryPackSerializer.Serialize(message);
 
@@ -79,14 +88,13 @@ namespace MistNet
             }
         }
 
-        public void SendAll(MistNetMessageType type, byte[] data, string chunk = "")
+        public void SendAll(MistNetMessageType type, byte[] data)
         {
             var message = new MistMessage
             {
                 Id = MistPeerData.SelfId,
                 Data = data,
                 Type = type,
-                Chunk = chunk,
             };
 
             foreach (var peerData in MistPeerData.GetConnectedPeer)
@@ -97,10 +105,70 @@ namespace MistNet
                 peerData.Peer.Send(sendData).Forget();
             }
         }
-        
-        public void Register(MistNetMessageType messageType, Action<byte[], string, string> function)
+
+        public void AddRPC(MistNetMessageType messageType, Action<byte[], string, string> function)
         {
             _onMessageDict.Add(messageType, function);
+        }
+
+        public void AddRPC(Delegate function)
+        {
+            _functions.Add(function.Method.Name, function);
+        }
+
+        public void RPCAll(string key, params object[] args)
+        {
+            var argsString = string.Join(",", args);
+            var sendData = new P_RPC
+            {
+                Method = key,
+                Args = argsString,
+            };
+            var bytes = MemoryPackSerializer.Serialize(sendData);
+            SendAll(MistNetMessageType.RPC, bytes);
+        }
+        
+        public void RPC(string targetId, string key, params object[] args)
+        {
+            var argsString = string.Join(",", args);
+            var sendData = new P_RPC
+            {
+                Method = key,
+                Args = argsString,
+            };
+            var bytes = MemoryPackSerializer.Serialize(sendData);
+            Send(MistNetMessageType.RPC, bytes, targetId);
+        }
+
+        private void OnRPC(byte[] data, string sourceId, string senderId)
+        {
+            var message = MemoryPackSerializer.Deserialize<P_RPC>(data);
+            var args = ConvertStringToObjects(message.Args);
+            _functions[message.Method].DynamicInvoke(args);
+        }
+
+        private object[] ConvertStringToObjects(string input)
+        {
+            var objects = new List<object>();
+            var parts = input.Split(','); // コンマで文字列を分割
+
+            foreach (var part in parts)
+            {
+                if (int.TryParse(part, out var intValue))
+                {
+                    objects.Add(intValue);
+                }
+                else if (float.TryParse(part, NumberStyles.Float, CultureInfo.InvariantCulture, out var floatValue))
+                {
+                    objects.Add(floatValue);
+                }
+                else
+                {
+                    objects.Add(part);
+                }
+            }
+
+            return objects.ToArray();
         }
 
         public void OnMessage(byte[] data, string senderId)
@@ -128,21 +196,15 @@ namespace MistNet
                 var peer = MistPeerData.GetPeer(targetId);
                 if (peer == null) return;
                 peer.Send(data).Forget();
-                Debug.Log($"[RECV][SEND][FORWARD][{message.Type.ToString()}] {message.Id} -> {MistPeerData.I.SelfId} -> {message.TargetId}");
+                Debug.Log(
+                    $"[RECV][SEND][FORWARD][{message.Type.ToString()}] {message.Id} -> {MistPeerData.I.SelfId} -> {message.TargetId}");
                 return;
             }
         }
 
-        #region OnMessage
-
         private bool IsMessageForSelf(MistMessage message)
         {
             return message.TargetId == MistPeerData.SelfId;
-            // ||
-            //        (
-            //            string.IsNullOrEmpty(message.TargetId) &&
-            //            MistOptimizationManager.I.Data.IsSameChunkWithSelf(message.Chunk)
-            //        );
         }
 
         private void ProcessMessageForSelf(MistMessage message, string senderId)
@@ -150,7 +212,6 @@ namespace MistNet
             MistManager.I.RoutingTable.Add(message.Id, senderId);
             _onMessageDict[message.Type].DynamicInvoke(message.Data, message.Id, senderId);
         }
-        #endregion
 
         public async UniTaskVoid Connect(string id)
         {

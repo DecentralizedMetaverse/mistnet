@@ -1,6 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
 using UnityEngine;
 
 namespace MistNet
@@ -13,11 +16,11 @@ namespace MistNet
         public bool IsOwner { get; private set; } = true;
         [HideInInspector] public MistTransform MistTransform;
         [HideInInspector] public Chunk Chunk;
-        
+
         private void Awake()
         {
-            // MistSyncManager.I.RegisterSyncObject(this);
             gameObject.TryGetComponent(out MistTransform);
+            RegisterRPC();
         }
 
         public void SetData(string id, bool isOwner, string prefabAddress, string ownerId)
@@ -27,7 +30,7 @@ namespace MistNet
             PrefabAddress = prefabAddress;
             OwnerId = ownerId;
             gameObject.TryGetComponent(out MistTransform);
-            
+
             if (IsOwner) MistSyncManager.I.SelfSyncObject = this;
         }
 
@@ -36,16 +39,33 @@ namespace MistNet
             MistSyncManager.I.UnregisterSyncObject(this);
         }
 
-        private void Update()
+        private void RegisterRPC()
         {
-            if (!IsOwner) return;
-            
-            // 座標からChunkの更新
-            Chunk.Update(transform.position);
-            // if (Chunk.Update(transform.position))
-            // {
-            //     MistConnectionOptimizer.I.OnChangedChunk(Chunk);
-            // }
+            // 対象のGameObjectにアタッチされているすべてのコンポーネントを取得
+            var components = gameObject.GetComponents<Component>();
+
+            foreach (var component in components)
+            {
+                // 各コンポーネントで定義されているメソッドを取得し、MyCustomAttributeが付与されたメソッドを検索
+                var methodsWithAttribute = component.GetType()
+                    .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                    .Where(m => m.GetCustomAttributes(typeof(MistRpcAttribute), false).Length > 0);
+
+                foreach (var methodInfo in methodsWithAttribute)
+                {
+                    Debug.Log($"Found method: {methodInfo.Name} in component: {component.GetType().Name}");
+                    // 引数の種類に応じたDelegateを作成
+                    var argTypes = methodInfo.GetParameters().Select(p => p.ParameterType).ToArray();
+
+                    // メソッドがvoidかどうかをチェックします
+                    var delegateType = methodInfo.ReturnType == typeof(void)
+                        ? Expression.GetActionType(argTypes)
+                        : Expression.GetFuncType(argTypes.Concat(new[] { methodInfo.ReturnType }).ToArray());
+                    
+                    var delegateInstance = Delegate.CreateDelegate(delegateType, component, methodInfo);
+                    MistManager.I.AddRPC(delegateInstance);
+                }
+            }
         }
     }
 }

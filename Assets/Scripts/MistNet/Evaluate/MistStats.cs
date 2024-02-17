@@ -21,8 +21,8 @@ namespace MistNet
         private void Start()
         {
             I = this;
-            MistManager.I.Register(MistNetMessageType.Ping, ReceivePing);
-            MistManager.I.Register(MistNetMessageType.Pong, ReceivePong);
+            MistManager.I.AddRPC(MistNetMessageType.Ping, ReceivePing);
+            MistManager.I.AddRPC(MistNetMessageType.Pong, ReceivePong);
             _cancellationToken = new CancellationTokenSource();
             UpdatePing(_cancellationToken.Token).Forget();
             UpdateSendSize(_cancellationToken.Token).Forget();

@@ -16,6 +16,8 @@ namespace MistNet
         
         private void Start()
         {
+            RPC_Test("test");
+            
             // 座標をランダムで取得する
             var position = Vector3.zero;
             if (randomSpawn)
@@ -33,7 +35,7 @@ namespace MistNet
         public string testVariable = "test";
         
         [MistRpc]
-        private int RPCTest(string a)
+        private int RPC_Test(string a)
         {
             return 0;
         }

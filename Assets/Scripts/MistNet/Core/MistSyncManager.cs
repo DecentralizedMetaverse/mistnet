@@ -23,9 +23,9 @@ namespace MistNet
 
         private void Start()
         {
-            MistManager.I.Register(MistNetMessageType.ObjectInstantiate,
+            MistManager.I.AddRPC(MistNetMessageType.ObjectInstantiate,
                 (a, b, c) => ReceiveObjectInstantiateInfo(a, b, c).Forget());
-            MistManager.I.Register(MistNetMessageType.Location, ReceiveLocation);
+            MistManager.I.AddRPC(MistNetMessageType.Location, ReceiveLocation);
         }
 
         public void SendObjectInstantiateInfo()

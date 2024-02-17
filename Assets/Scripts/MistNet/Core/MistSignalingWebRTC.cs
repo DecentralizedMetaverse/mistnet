@@ -27,9 +27,9 @@ namespace MistNet
             };
 
             // MistManager.I.Register(MistNetMessageType.JoinNotify, OnJoin);
-            MistManager.I.Register(MistNetMessageType.Signaling, ReceiveSignalingMessage);
-            MistManager.I.Register(MistNetMessageType.SignalingRequest, OnSignalingRequest);
-            MistManager.I.Register(MistNetMessageType.SignalingResponse, OnSignalingResponse);
+            MistManager.I.AddRPC(MistNetMessageType.Signaling, ReceiveSignalingMessage);
+            // MistManager.I.Register(MistNetMessageType.SignalingRequest, OnSignalingRequest);
+            // MistManager.I.Register(MistNetMessageType.SignalingResponse, OnSignalingResponse);
             MistManager.I.ConnectAction += Connect;
         }
         
@@ -67,44 +67,44 @@ namespace MistNet
             _functions[type](response);
         }
 
-        [Obsolete]
-        private void OnSignalingRequest(byte[] data, string sourceId, string senderId)
-        {
-            var message = MemoryPackSerializer.Deserialize<P_SignalingRequest>(data);
-            if (_signalingRequestIds.Contains(message.TargetId))
-            {
-                Debug.Log($"request check: {sourceId}, {message.TargetId}");
-                // 誰がofferを送るかの決定
-                var sendData = new P_SignalingResponse
-                {
-                    TargetId = message.TargetId,
-                    Request = "",
-                };
-                MistManager.I.Send(MistNetMessageType.SignalingResponse, MemoryPackSerializer.Serialize(sendData), sourceId);
-                
-                sendData.TargetId = senderId;
-                sendData.Request = "offer";
-                MistManager.I.Send(MistNetMessageType.SignalingResponse, MemoryPackSerializer.Serialize(sendData), message.TargetId);
-
-                _signalingRequestIds.Remove(message.TargetId);
-            }
-            else
-            {
-                Debug.Log($"request added: {sourceId}, {senderId}, {message.TargetId}");
-                _signalingRequestIds.Add(sourceId);
-            }
-        }
-        
-        [Obsolete]
-        private void OnSignalingResponse(byte[] data, string sourceId, string senderId)
-        {
-            var message = MemoryPackSerializer.Deserialize<P_SignalingResponse>(data);
-            if (message.Request == "offer")
-            {
-                Debug.Log($"send offer: {sourceId}, {senderId}, {message.TargetId}");
-                _mistSignaling.SendOffer(message.TargetId).Forget();
-            }
-        }
+        // [Obsolete]
+        // private void OnSignalingRequest(byte[] data, string sourceId, string senderId)
+        // {
+        //     var message = MemoryPackSerializer.Deserialize<P_SignalingRequest>(data);
+        //     if (_signalingRequestIds.Contains(message.TargetId))
+        //     {
+        //         Debug.Log($"request check: {sourceId}, {message.TargetId}");
+        //         // 誰がofferを送るかの決定
+        //         var sendData = new P_SignalingResponse
+        //         {
+        //             TargetId = message.TargetId,
+        //             Request = "",
+        //         };
+        //         MistManager.I.Send(MistNetMessageType.SignalingResponse, MemoryPackSerializer.Serialize(sendData), sourceId);
+        //         
+        //         sendData.TargetId = senderId;
+        //         sendData.Request = "offer";
+        //         MistManager.I.Send(MistNetMessageType.SignalingResponse, MemoryPackSerializer.Serialize(sendData), message.TargetId);
+        //
+        //         _signalingRequestIds.Remove(message.TargetId);
+        //     }
+        //     else
+        //     {
+        //         Debug.Log($"request added: {sourceId}, {senderId}, {message.TargetId}");
+        //         _signalingRequestIds.Add(sourceId);
+        //     }
+        // }
+        //
+        // [Obsolete]
+        // private void OnSignalingResponse(byte[] data, string sourceId, string senderId)
+        // {
+        //     var message = MemoryPackSerializer.Deserialize<P_SignalingResponse>(data);
+        //     if (message.Request == "offer")
+        //     {
+        //         Debug.Log($"send offer: {sourceId}, {senderId}, {message.TargetId}");
+        //         _mistSignaling.SendOffer(message.TargetId).Forget();
+        //     }
+        // }
 
         private void Connect(string id)
         {

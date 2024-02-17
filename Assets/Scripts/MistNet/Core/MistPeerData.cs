@@ -24,7 +24,7 @@ namespace MistNet
             _dict.Clear();
         }
         
-        public void Finalize()
+        public void AllClose()
         {
             foreach (var peerData in _dict.Values)
             {
