@@ -2,10 +2,20 @@
 - 開発中の分散型ネットワークライブラリです
 
 ## 導入方法
+- MemoryPack
+```
+https://github.com/Cysharp/MemoryPack.git?path=src/MemoryPack.Unity/Assets/Plugins/MemoryPack
+```
+- UniTask
+```
+https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask
+```
+
 UPM Package
 ```
 git@github.com:DecentralizedMetaverse/mistnet.git?path=/Assets/MistNet
 ```
+
 
 ## Signaling Server実行方法
 - MistNet/main.py
