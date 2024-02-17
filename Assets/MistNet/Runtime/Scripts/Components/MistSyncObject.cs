@@ -33,6 +33,7 @@ namespace MistNet
 
         private void OnDestroy()
         {
+            if (IsOwner) return;
             MistSyncManager.I.UnregisterSyncObject(this);
         }
 
