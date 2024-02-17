@@ -2,6 +2,7 @@
 - 開発中の分散型ネットワークライブラリです
 
 ## 導入方法
+UPM Package
 - MemoryPack
 ```
 https://github.com/Cysharp/MemoryPack.git?path=src/MemoryPack.Unity/Assets/Plugins/MemoryPack
@@ -10,8 +11,7 @@ https://github.com/Cysharp/MemoryPack.git?path=src/MemoryPack.Unity/Assets/Plugi
 ```
 https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask
 ```
-
-UPM Package
+- MistNet
 ```
 git@github.com:DecentralizedMetaverse/mistnet.git?path=/Assets/MistNet
 ```
