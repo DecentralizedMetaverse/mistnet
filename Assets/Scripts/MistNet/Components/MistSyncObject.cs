@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -10,12 +8,11 @@ namespace MistNet
 {
     public class MistSyncObject : MonoBehaviour
     {
-        public string Id;
-        public string PrefabAddress;
+        public string Id { get; private set; }
+        public string PrefabAddress{ get; private set; }
         public string OwnerId { get; private set; }
         public bool IsOwner { get; private set; } = true;
         [HideInInspector] public MistTransform MistTransform;
-        [HideInInspector] public Chunk Chunk;
 
         private void Awake()
         {
@@ -41,12 +38,12 @@ namespace MistNet
 
         private void RegisterRPC()
         {
-            // 対象のGameObjectにアタッチされているすべてのコンポーネントを取得
+            // 対象のGameObjectにアタッチされているすべてのComponentsを取得
             var components = gameObject.GetComponents<Component>();
 
             foreach (var component in components)
             {
-                // 各コンポーネントで定義されているメソッドを取得し、MyCustomAttributeが付与されたメソッドを検索
+                // 各Componentで定義されているMethodを取得し、Attributeが付与されたメソッドを検索
                 var methodsWithAttribute = component.GetType()
                     .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                     .Where(m => m.GetCustomAttributes(typeof(MistRpcAttribute), false).Length > 0);
@@ -57,7 +54,7 @@ namespace MistNet
                     // 引数の種類に応じたDelegateを作成
                     var argTypes = methodInfo.GetParameters().Select(p => p.ParameterType).ToArray();
 
-                    // メソッドがvoidかどうかをチェックします
+                    // 返り値がvoidかどうか
                     var delegateType = methodInfo.ReturnType == typeof(void)
                         ? Expression.GetActionType(argTypes)
                         : Expression.GetFuncType(argTypes.Concat(new[] { methodInfo.ReturnType }).ToArray());
