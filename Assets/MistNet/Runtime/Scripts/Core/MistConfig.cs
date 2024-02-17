@@ -9,8 +9,8 @@ namespace MistNet
     {
         public static readonly string ConfigPath = $"{Application.dataPath}/../MistNetConfig.json";
         public static int MinConnection { get; private set; } = 3;
-        public static int LimitConnection { get; private set; } = 5;
-        public static int MaxConnection { get; private set; } = 10;
+        public static int LimitConnection { get; private set; } = 20;
+        public static int MaxConnection { get; private set; } = 80;
         public static string SignalingServerAddress { get; private set; } = "ws://localhost:8080/ws";
         
         [Serializable]
