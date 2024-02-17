@@ -76,9 +76,7 @@ messages:
   - name: PeerData
     fields:
       - name: Id
-        type: string
-      - name: Chunk
-        type: string
+        type: string      
       - name: Position
         type: Vector3
       - name: CurrentConnectNum

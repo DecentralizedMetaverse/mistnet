@@ -1,0 +1,15 @@
+{
+    "name": "com.tik-choco.mistnet",
+    "version": "1.0.0",
+    "displayName": "MistNet",
+    "description": "分散型ネットワークライブラリ",
+    "unity": "2022.3", 
+    "dependencies": {},
+    "samples": [
+        {
+            "displayName": "Sample",
+            "description": "Sample",
+            "path": "Samples~/Sample"
+        }
+    ]
+}

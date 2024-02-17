@@ -245,7 +245,6 @@ namespace MistNet
             var selfData = new P_PeerData
             {
                 Id = MistManager.I.MistPeerData.SelfId,
-                Chunk = MistSyncManager.I.SelfSyncObject.Chunk.Get(),
                 Position = MistSyncManager.I.SelfSyncObject.transform.position,
                 CurrentConnectNum = MistManager.I.MistPeerData.GetConnectedPeer.Count,
                 MinConnectNum = MistConfig.MinConnection,
