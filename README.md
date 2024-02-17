@@ -1,8 +1,11 @@
 # MistNet
 - 開発中の分散型ネットワークライブラリです
 
-## 実行方法
-- Assets/Scenes/MistNet　Sceneを開く
+## 導入方法
+UPM Package
+```
+git@github.com:DecentralizedMetaverse/mistnet.git?path=/Assets/MistNet
+```
 
 ## Signaling Server実行方法
 - MistNet/main.py
