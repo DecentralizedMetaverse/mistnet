@@ -30,6 +30,7 @@ namespace MistNet
             _onMessageDict = new(); // targetId, viaId
 
         private static Dictionary<string, Delegate> _functions = new();
+        private Dictionary<string, int> _functionArgsLength = new();
 
 
         public void Awake()
@@ -114,6 +115,7 @@ namespace MistNet
         public void AddRPC(Delegate function)
         {
             _functions.Add(function.Method.Name, function);
+            _functionArgsLength.Add(function.Method.Name, function.GetMethodInfo().GetParameters().Length);
         }
 
         public void RPCAll(string key, params object[] args)
@@ -125,9 +127,10 @@ namespace MistNet
                 Args = argsString,
             };
             var bytes = MemoryPackSerializer.Serialize(sendData);
-            SendAll(MistNetMessageType.RPC, bytes);
+            OnRPC(bytes, MistPeerData.SelfId, MistPeerData.SelfId);
+            // SendAll(MistNetMessageType.RPC, bytes);
         }
-        
+
         public void RPC(string targetId, string key, params object[] args)
         {
             var argsString = string.Join(",", args);
@@ -144,13 +147,24 @@ namespace MistNet
         {
             var message = MemoryPackSerializer.Deserialize<P_RPC>(data);
             var args = ConvertStringToObjects(message.Args);
-            _functions[message.Method].DynamicInvoke(args);
+            var argsLength = _functionArgsLength[message.Method];
+            
+            if (args.Count != argsLength)
+            {
+                args.Add(new MessageInfo
+                {
+                    SourceId = sourceId,
+                    SenderId = senderId,
+                });
+            }
+
+            _functions[message.Method].DynamicInvoke(args.ToArray());
         }
 
-        private object[] ConvertStringToObjects(string input)
+        private List<object> ConvertStringToObjects(string input)
         {
             var objects = new List<object>();
-            var parts = input.Split(','); // コンマで文字列を分割
+            var parts = input.Split(',');
 
             foreach (var part in parts)
             {
@@ -168,7 +182,7 @@ namespace MistNet
                 }
             }
 
-            return objects.ToArray();
+            return objects;
         }
 
         public void OnMessage(byte[] data, string senderId)

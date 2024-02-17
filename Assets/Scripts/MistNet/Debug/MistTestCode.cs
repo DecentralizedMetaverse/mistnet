@@ -8,6 +8,7 @@ public class MistTestCode : MonoBehaviour
 {
     private void Start()
     {
+        // MistManager.I.RPCAll(nameof(RPC_Test), "abcaaa");
         MistManager.I.RPCAll(nameof(RPC_Test2), "abc", 3, 0.1f);
     }
     
@@ -18,8 +19,8 @@ public class MistTestCode : MonoBehaviour
     }
 
     [MistRpc]
-    public void RPC_Test2(string a, int b, float c)
+    public void RPC_Test2(string a, int b, float c, MessageInfo info)
     {
-        Debug.Log($"RPC_Test2: {a}, {b}, {c}");        
+        Debug.Log($"RPC_Test2: {a}, {b}, {c} {info.SourceId} {info.SenderId}");        
     }
 }

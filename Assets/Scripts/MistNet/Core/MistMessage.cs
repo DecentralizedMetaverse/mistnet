@@ -8,3 +8,12 @@ public partial class MistMessage
     public string Id;
     public byte[] Data;
 }
+
+namespace MistNet
+{
+    public struct MessageInfo
+    {
+        public string SourceId { get; set; }
+        public string SenderId { get; set; }
+    }
+}
