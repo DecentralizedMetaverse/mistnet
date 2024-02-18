@@ -1,4 +1,7 @@
 # MistNet
+- [English Documents](README_EN.md)
+- [中文文件](README_CN.md)
+
 完全分散型ネットワークライブラリです
 
 # 特徴
@@ -65,12 +68,14 @@ Prefabは「Packages/MistNet/Runtime/Prefabs」の中にあります。
 ## 設定
 - 「MistSyncObject」を Add Componentします。
     - RPC呼び出しや、同期するObjectの識別に使用されます。
+
 ## 座標同期方法
 - 「MistTransform」を Add Componentします。
 
 ## Animation同期方法
 - 「MistAnimator」を Add Componentします。
 - 同期対象とするParameterを下記のように設定してください。
+
 ![Alt text](image-3.png)
 
 ## 同期GameObjectの設定例
@@ -81,6 +86,7 @@ Prefabは「Packages/MistNet/Runtime/Prefabs」の中にあります。
 MistNetを経由してInstantiateする必要があります。
 
 - Addressable Assets に対象となるGameObjectのPrefabを登録し、下記のように実行してください。
+
 ![Alt text](image-2.png)
 
 
