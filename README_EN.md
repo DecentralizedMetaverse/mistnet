@@ -27,7 +27,8 @@ Two types are provided, both functioning in the same manner.
 ## Python
 - MistNet/main.py
 
-![](image.png)
+
+![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/f0c37c6a-aec2-47d7-8b09-99162c56e35a)
 
 ## C#
 ![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/c5b11c4e-4604-455e-8c1d-81f77eee0d3d)
@@ -37,7 +38,7 @@ Please place the "MistNet" Prefab on the Scene.
 
 The Prefab can be found under "Packages/MistNet/Runtime/Prefabs".
 
-![Alt text](image-1.png)
+![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/e706a9e6-d549-489b-b1cc-1d4a770f6c70)
 
 # Connection Settings
 - SignalingServerAddress
@@ -71,10 +72,10 @@ The Prefab can be found under "Packages/MistNet/Runtime/Prefabs".
 - Add "MistAnimator" as a component.
 - Configure the parameters to synchronize as shown below.
 
-![Alt text](image-3.png)
+![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/6a52670a-ff8e-4346-9329-32a90db26904)
 
 ## Example of Configured Synchronization GameObject
-![Alt text](image-4.png)
+![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/ed16052a-2bae-4dea-bf0f-a7ce367f10b7)
 
 ## Instantiate
 - Instead of placing the GameObjects to synchronize in the Scene from the start,
@@ -82,7 +83,7 @@ you need to instantiate them through MistNet.
 
 - Register the GameObject Prefab to be targeted with Addressable Assets and execute as shown below.
 
-![Alt text](image-2.png)
+![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/8ee873c1-89ff-4774-b762-a9017df5a825)
 
 
 ```csharp

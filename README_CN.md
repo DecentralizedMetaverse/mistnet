@@ -29,7 +29,7 @@ git@github.com:DecentralizedMetaverse/mistnet.git?path=/Assets/MistNet
 ## Python
 - MistNet/main.py
 
-![](image.png)
+![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/f0c37c6a-aec2-47d7-8b09-99162c56e35a)
 
 ## C#
 ![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/c5b11c4e-4604-455e-8c1d-81f77eee0d3d)
@@ -39,7 +39,7 @@ git@github.com:DecentralizedMetaverse/mistnet.git?path=/Assets/MistNet
 
 Prefab位於「Packages/MistNet/Runtime/Prefabs」中。
 
-![Alt text](image-1.png)
+![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/e706a9e6-d549-489b-b1cc-1d4a770f6c70)
 
 # 連接設置
 - SignalingServerAddress
@@ -72,17 +72,17 @@ Prefab位於「Packages/MistNet/Runtime/Prefabs」中。
 - 添加「MistAnimator」組件。
 - 請按下面的方式設置同步目標參數。
 
-![Alt text](image-3.png)
+![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/6a52670a-ff8e-4346-9329-32a90db26904)
 
 ## 同步GameObject的設定示例
-![Alt text](image-4.png)
+![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/ed16052a-2bae-4dea-bf0f-a7ce367f10b7)
 
 ## Instantiate
 - 不是將同步的GameObject從一開始就放置在Scene中，而是需要通過MistNet來Instantiate。
 
 - 將目標GameObject的Prefab註冊到Addressable Assets中，然後按照以下方式執行。
 
-![Alt text](image-2.png)
+![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/8ee873c1-89ff-4774-b762-a9017df5a825)
 
 
 ```csharp
