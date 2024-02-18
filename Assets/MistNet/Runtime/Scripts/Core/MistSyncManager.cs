@@ -43,7 +43,7 @@ namespace MistNet
             }
         }
 
-        private async UniTaskVoid ReceiveObjectInstantiateInfo(byte[] data, string sourceId, string senderId)
+        private async UniTaskVoid ReceiveObjectInstantiateInfo(byte[] data, string sourceId, string _)
         {
             var instantiateData = MemoryPackSerializer.Deserialize<P_ObjectInstantiate>(data);
             if (_syncObjects.ContainsKey(instantiateData.ObjId)) return;

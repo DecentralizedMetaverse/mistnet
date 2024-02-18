@@ -11,7 +11,6 @@ namespace MistNet
     {
         private MistSignaling _mistSignaling;
         private Dictionary<string, Action<Dictionary<string, object>>> _functions;
-        private readonly HashSet<string> _signalingRequestIds = new();
         
         private void Start()
         {
@@ -36,7 +35,6 @@ namespace MistNet
         /// </summary>
         /// <param name="sendData"></param>
         /// <param name="targetId"></param>
-        /// <param name="viaId"></param>
         private void SendSignalingMessage(Dictionary<string, object> sendData, string targetId)
         {
             var message = new P_Signaling
@@ -52,9 +50,6 @@ namespace MistNet
         /// <summary>
         /// 受信
         /// </summary>
-        /// <param name="bytes"></param>
-        /// <param name="sourceId"></param>
-        /// <param name="viaId"></param>
         private void ReceiveSignalingMessage(byte[] bytes, string sourceId, string _)
         {
             var receiveData = MemoryPackSerializer.Deserialize<P_Signaling>(bytes);

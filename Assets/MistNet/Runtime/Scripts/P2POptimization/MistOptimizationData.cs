@@ -1,15 +1,10 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace MistNet
 {
     public class MistOptimizationData
     {
-        // [Obsolete] public readonly Dictionary<(int, int, int), HashSet<string>> ChunkTable = new(); // key: chunk, value: id
-        // [Obsolete] public readonly Dictionary<string, ChunkTableElement> ChunkTableElementDict = new(); // key: id, value: ChunkTableElement
-
         public readonly List<string> PeerConnectionPriorityList = new(); // id
         public readonly HashSet<string> PeerDisconnectRequestList = new(); // id
         public readonly Dictionary<string, int> DistanceDict = new(); // key: peerId, value: distance

@@ -1,13 +1,12 @@
 using System;
 using System.IO;
-using System.Text;
 using UnityEngine;
 
 namespace MistNet
 {
     public class MistConfig
     {
-        public static readonly string ConfigPath = $"{Application.dataPath}/../MistNetConfig.json";
+        private static readonly string ConfigPath = $"{Application.dataPath}/../MistNetConfig.json";
         public static int MinConnection { get; private set; } = 3;
         public static int LimitConnection { get; private set; } = 20;
         public static int MaxConnection { get; private set; } = 80;
@@ -24,8 +23,8 @@ namespace MistNet
 
         public void ReadConfig()
         {
-            if (!System.IO.File.Exists(ConfigPath)) return;
-            var txt = System.IO.File.ReadAllText(ConfigPath);
+            if (!File.Exists(ConfigPath)) return;
+            var txt = File.ReadAllText(ConfigPath);
             var config = JsonUtility.FromJson<MistConfigData>(txt);
             MinConnection = config.MinConnection;
             LimitConnection = config.LimitConnection;

@@ -1,6 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using MistNet;
 using UnityEngine;
 
@@ -9,7 +6,7 @@ public class MistTestCode : MonoBehaviour
     private void Start()
     {
         // MistManager.I.RPCAll(nameof(RPC_Test), "abcaaa");
-        MistManager.I.RPCAll(nameof(RPC_Test2), "abc", 3, 0.1f);
+        // MistManager.I.RPCAll(nameof(RPC_Test2), "abc", 3, 0.1f);
     }
     
     [MistRpc]

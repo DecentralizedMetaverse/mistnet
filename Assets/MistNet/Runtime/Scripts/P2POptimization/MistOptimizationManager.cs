@@ -44,7 +44,6 @@ namespace MistNet
             while (!token.IsCancellationRequested)
             {
                 Data.UpdateDistance();
-                // MistConnectionOptimizer.I.UpdateFindDisconnectPeer();
                 await UniTask.Delay(TimeSpan.FromSeconds(IntervalDistanceTimeSec), cancellationToken: token);
             }
         }
