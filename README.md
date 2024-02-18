@@ -7,7 +7,7 @@
 # 特徴
 - パーシャルメッシュ型P2Pで接続を行います
 - 中央となるサーバーが存在しません
-- 通信にはWebRTCが使用されています
+- 通信にはWebRTCを使用します
 
 # 導入方法
 UPM Package
@@ -28,7 +28,7 @@ git@github.com:DecentralizedMetaverse/mistnet.git?path=/Assets/MistNet
 ```
 
 # Signaling Server
-2種類用意しています。どちらも処理方法は同じです。
+2種類用意しています。どちらも処理内容は同じです。
 ## Python
 - MistNet/main.py
 
