@@ -10,7 +10,7 @@ namespace MistNet
     {
         public MistSyncObject MistSyncObject;
         
-        public void GetMistSyncObject()
+        protected virtual void Awake()
         {
             MistSyncObject = GetComponent<MistSyncObject>();
         }
