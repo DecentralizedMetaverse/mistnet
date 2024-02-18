@@ -130,8 +130,7 @@ namespace MistNet
                 Args = argsString,
             };
             var bytes = MemoryPackSerializer.Serialize(sendData);
-            OnRPC(bytes, MistPeerData.SelfId, MistPeerData.SelfId);
-            // SendAll(MistNetMessageType.RPC, bytes);
+            SendAll(MistNetMessageType.RPC, bytes);
         }
 
         public void RPC(string targetId, string key, params object[] args)
