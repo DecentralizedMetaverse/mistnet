@@ -170,76 +170,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &599909275
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 599909279}
-  - component: {fileID: 599909278}
-  - component: {fileID: 599909277}
-  - component: {fileID: 599909276}
-  m_Layer: 0
-  m_Name: MistOptimizer
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &599909276
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 599909275}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bd5624c37877e664d96f7ac804efc20c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &599909277
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 599909275}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 66623bab74c15ba48825dfd7f4f5f864, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &599909278
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 599909275}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 670a82fed14f6fe4da5efb4785502c3b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!4 &599909279
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 599909275}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.04, y: -1.0149955, z: -2.6315317}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &994400526
 GameObject:
   m_ObjectHideFlags: 0
@@ -269,9 +199,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1a85e4816b2bb324cb6ecc3206925a18, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  PrefabAddress: MistPlayerTest
+  prefabAddress: Assets/Prefab/MistNet/MistPlayerTest.prefab
   randomSpawn: 1
-  testVariable: test
 --- !u!4 &994400528
 Transform:
   m_ObjectHideFlags: 0
@@ -999,7 +928,6 @@ SceneRoots:
   - {fileID: 5615826333483994237}
   - {fileID: 994400528}
   - {fileID: 1531781159}
-  - {fileID: 599909279}
   - {fileID: 1505926416}
   - {fileID: 1065131182}
   - {fileID: 1017790959}
