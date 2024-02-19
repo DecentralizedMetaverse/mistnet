@@ -193,8 +193,8 @@ namespace MistNet
                 Debug.LogWarning("dataChannel is not open");
                 return;
             }
-            
-            MistStats.I.TotalSendBytes += data.Length;
+
+            if (MistStats.I != null) MistStats.I.TotalSendBytes += data.Length;
             _dataChannel.Send(data);
         }
 
@@ -202,7 +202,7 @@ namespace MistNet
         {
             await UniTask.WaitUntil(() => _dataChannel != null && _dataChannel.ReadyState == RTCDataChannelState.Open);
 
-            MistStats.I.TotalSendBytes += data.Length;
+            if (MistStats.I != null) MistStats.I.TotalSendBytes += data.Length;
             _dataChannel.Send(data);
         }
 
@@ -241,7 +241,7 @@ namespace MistNet
 
         private void OnMessageDataChannel(byte[] data)
         {
-            MistStats.I.TotalReceiveBytes += data.Length;
+            if (MistStats.I != null) MistStats.I.TotalReceiveBytes += data.Length;
             OnMessage?.Invoke(data, Id);
         }
 

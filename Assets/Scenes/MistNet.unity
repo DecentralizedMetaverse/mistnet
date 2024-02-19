@@ -199,7 +199,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1a85e4816b2bb324cb6ecc3206925a18, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  prefabAddress: Assets/Prefab/MistNet/MistPlayerTest.prefab
+  prefabAddress: MistPlayerTest
   randomSpawn: 1
 --- !u!4 &994400528
 Transform:
@@ -440,71 +440,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
---- !u!1 &1134900522
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1134900525}
-  - component: {fileID: 1134900524}
-  - component: {fileID: 1134900523}
-  m_Layer: 0
-  m_Name: MistPlayer
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1134900523
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1134900522}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b95132c5a4b35f24e81c8747af1284a0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  animatorState:
-  - StateName: Speed
-    Type: 1
-  - StateName: MotionSpeed
-    Type: 1
-  - StateName: Jump
-    Type: 0
---- !u!114 &1134900524
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1134900522}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 31de544a0be1bd8448dd603186b8e903, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  MistTransform: {fileID: 0}
---- !u!4 &1134900525
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1134900522}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1505926412
 GameObject:
   m_ObjectHideFlags: 0
@@ -933,4 +868,3 @@ SceneRoots:
   - {fileID: 1017790959}
   - {fileID: 5347918692768660833}
   - {fileID: 337109382}
-  - {fileID: 1134900525}

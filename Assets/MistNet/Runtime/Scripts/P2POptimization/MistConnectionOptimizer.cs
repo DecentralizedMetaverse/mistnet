@@ -110,7 +110,7 @@ namespace MistNet
             var table = MistPeerData.I.GetAllPeer;
             foreach (var kv in table)
             {
-                text += $"{kv.Key} {kv.Value.Chunk} {kv.Value.CurrentConnectNum} {kv.Value.MaxConnectNum} {kv.Value.State}\n";
+                text += $"{kv.Key} {kv.Value.CurrentConnectNum} {kv.Value.MaxConnectNum} {kv.Value.State}\n";
             }
 
             Debug.Log(text);
@@ -130,7 +130,6 @@ namespace MistNet
                 {
                     Id = element.Value.Id,
                     Distance = Vector3.Distance(selfPosition, element.Value.Position), // 自分の位置との距離を計算
-                    Chunk = element.Value.Chunk
                 })
                 .ToList();
         }
@@ -258,14 +257,12 @@ namespace MistNet
             foreach (var element in MistPeerData.I.GetAllPeer)
             {
                 if (string.IsNullOrEmpty(element.Value.Id)) continue;
-                var chunkStr = ParseChunk(element.Value.Chunk);
                 if(element.Value.MaxConnectNum == 0) continue;
                 if(element.Value.State == MistPeerState.Disconnected) continue;
                 
                 var sendData = new P_PeerData()
                 {
                     Id = element.Value.Id,
-                    Chunk = chunkStr,
                     Position = element.Value.Position,
                     CurrentConnectNum = element.Value.CurrentConnectNum,
                     MinConnectNum = element.Value.MinConnectNum,
