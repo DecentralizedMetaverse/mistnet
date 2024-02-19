@@ -1,6 +1,10 @@
 # MistNet
 A fully decentralized network library.
 
+**Implementation example**
+
+https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/cd4a1d95-3422-4b07-b9b6-21f8c63cd1f8
+
 # Features
 - Connects via a partial mesh P2P architecture.
 - There is no central server.
