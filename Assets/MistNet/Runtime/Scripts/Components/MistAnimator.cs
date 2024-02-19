@@ -65,7 +65,7 @@ namespace MistNet
                 _animStateDict.Add(state.StateName, state);
             }
             
-            if (_syncObject.IsOwner) return;
+            if (!_syncObject.IsOwner) return;
             UpdateAnim(_tokenSource.Token).Forget();
         }
         
@@ -76,20 +76,14 @@ namespace MistNet
 
         private async UniTask UpdateAnim(CancellationToken token)
         {
+            if (!_syncObject.IsOwner) return;
             while (!token.IsCancellationRequested)
             {
                 await UniTask.Delay(TimeSpan.FromSeconds(UpdateIntervalTimeSec), cancellationToken: token);
                 if (Animator == null) continue;
 
-                if (_syncObject.IsOwner)
-                {
                     GetAnimatorState();
                     SendAnimState();
-                }
-                else
-                {
-                    SetAnimatorState();
-                }
             }
         }
         
@@ -107,16 +101,18 @@ namespace MistNet
         
         public void ReceiveAnimState(P_Animation receiveData)
         {
-            var state = JsonConvert.DeserializeObject<AnimatorState[]>(receiveData.State);
-            foreach (var s in state)
+            var states = JsonConvert.DeserializeObject<AnimatorState[]>(receiveData.State);
+            foreach (var state in states)
             {
-                _animStateDict[s.StateName] = s;
+                _animStateDict[state.StateName] = state;
             }
+
+            SetAnimatorState();
         }
 
         private void SetAnimatorState()
         {
-            foreach (var state in animatorState)
+            foreach (var state in _animStateDict.Values)
             {
                 switch (state.Type)
                 {
@@ -141,7 +137,7 @@ namespace MistNet
         
         private void GetAnimatorState()
         {
-            foreach (var state in animatorState)
+            foreach (var state in _animStateDict.Values)
             {
                 switch (state.Type)
                 {
