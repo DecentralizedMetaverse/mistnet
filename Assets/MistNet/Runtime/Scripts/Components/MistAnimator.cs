@@ -12,8 +12,9 @@ namespace MistNet
     public class MistAnimator : MonoBehaviour
     {
         private static readonly float UpdateIntervalTimeSec = 0.5f;
-        private readonly CancellationTokenSource _tokenSource = new ();
+        private readonly CancellationTokenSource _tokenSource = new();
         public Animator Animator { get; set; }
+
         [SerializeField] private AnimatorState[] animatorState = new[]
         {
             new AnimatorState { StateName = "Speed", Type = AnimatorControllerParameterType.Float },
@@ -41,34 +42,30 @@ namespace MistNet
                     }
 
                     return false;
-                } 
+                }
                 set => _triggerValue = value;
             }
+
             public int IntValue { get; set; }
             private bool _triggerValue;
             private int _hash;
         }
-        
-        private MistSyncObject _syncObject;
-        private Dictionary<string, int> _animStateHash = new ();
-        private Dictionary<string, AnimatorState> _animStateDict = new ();
 
-        private void Awake()
+        private MistSyncObject _syncObject;
+        private readonly Dictionary<string, int> _animStateHash = new();
+
+        private void Start()
         {
             _syncObject = GetComponent<MistSyncObject>();
             foreach (var state in animatorState)
             {
                 _animStateHash.Add(state.StateName, state.Hash);
             }
-            foreach (var state in animatorState)
-            {
-                _animStateDict.Add(state.StateName, state);
-            }
-            
+
             if (!_syncObject.IsOwner) return;
             UpdateAnim(_tokenSource.Token).Forget();
         }
-        
+
         private void OnDestroy()
         {
             _tokenSource.Cancel();
@@ -82,11 +79,11 @@ namespace MistNet
                 await UniTask.Delay(TimeSpan.FromSeconds(UpdateIntervalTimeSec), cancellationToken: token);
                 if (Animator == null) continue;
 
-                    GetAnimatorState();
-                    SendAnimState();
+                GetAnimatorState();
+                SendAnimState();
             }
         }
-        
+
         private void SendAnimState()
         {
             var stateText = JsonConvert.SerializeObject(animatorState);
@@ -98,48 +95,44 @@ namespace MistNet
             var bytes = MemoryPackSerializer.Serialize(sendData);
             MistManager.I.SendAll(MistNetMessageType.Animation, bytes);
         }
-        
+
         public void ReceiveAnimState(P_Animation receiveData)
         {
-            var states = JsonConvert.DeserializeObject<AnimatorState[]>(receiveData.State);
-            foreach (var state in states)
-            {
-                _animStateDict[state.StateName] = state;
-            }
-
+            animatorState = JsonConvert.DeserializeObject<AnimatorState[]>(receiveData.State);
             SetAnimatorState();
         }
 
         private void SetAnimatorState()
         {
-            if(Animator == null) return;
-            
-            foreach (var state in _animStateDict.Values)
+            if (Animator == null) return;
+            foreach (var state in animatorState)
             {
+                var stateHash = _animStateHash[state.StateName];
                 switch (state.Type)
                 {
                     case AnimatorControllerParameterType.Bool:
-                        Animator.SetBool(state.Hash, _animStateDict[state.StateName].BoolValue);
+                        Animator.SetBool(stateHash, state.BoolValue);
                         break;
                     case AnimatorControllerParameterType.Float:
-                        Animator.SetFloat(state.Hash, _animStateDict[state.StateName].FloatValue);
+                        Animator.SetFloat(stateHash, state.FloatValue);
+                        Debug.Log($"SetFloat: {state.StateName} {state.FloatValue} {_syncObject.OwnerId}");
                         break;
                     case AnimatorControllerParameterType.Int:
-                        Animator.SetInteger(state.Hash, _animStateDict[state.StateName].IntValue);
+                        Animator.SetInteger(stateHash, state.IntValue);
                         break;
                     case AnimatorControllerParameterType.Trigger:
-                        if (_animStateDict[state.StateName].TriggerValue)
+                        if (state.TriggerValue)
                         {
-                            Animator.SetTrigger(state.Hash);
+                            Animator.SetTrigger(stateHash);
                         }
                         break;
                 }
             }
         }
-        
+
         private void GetAnimatorState()
         {
-            foreach (var state in _animStateDict.Values)
+            foreach (var state in animatorState)
             {
                 switch (state.Type)
                 {

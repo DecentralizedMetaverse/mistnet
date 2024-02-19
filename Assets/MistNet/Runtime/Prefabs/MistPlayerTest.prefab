@@ -13,6 +13,9 @@ GameObject:
   - component: {fileID: 4381840333400488554}
   - component: {fileID: 1559557820499594004}
   - component: {fileID: 2156153193105701224}
+  - component: {fileID: 7925850346789279883}
+  - component: {fileID: 5006252636332143779}
+  - component: {fileID: 4555866850124383595}
   m_Layer: 0
   m_Name: MistPlayerTest
   m_TagString: Untagged
@@ -48,13 +51,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 31de544a0be1bd8448dd603186b8e903, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Id: 
-  PrefabAddress: 
   MistTransform: {fileID: 0}
-  Chunk:
-    X: 0
-    Y: 0
-    Z: 0
 --- !u!114 &4381840333400488554
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -93,6 +90,57 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   changeMaterial: {fileID: 2100000, guid: a969d4dff3aba524f95ac99e16d09646, type: 2}
+--- !u!114 &7925850346789279883
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6339836550088581722}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b95132c5a4b35f24e81c8747af1284a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  animatorState:
+  - StateName: Speed
+    Type: 1
+--- !u!95 &5006252636332143779
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6339836550088581722}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: e048ee5ab0d6cf144b0187e30a3fa1a5, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &4555866850124383595
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6339836550088581722}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f3fe93f9c8b9394189d9177b459b4fe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncObject: {fileID: 1998646823194181299}
+  animator: {fileID: 5006252636332143779}
+  mistAnimator: {fileID: 7925850346789279883}
 --- !u!1 &8782782535456946550
 GameObject:
   m_ObjectHideFlags: 0
