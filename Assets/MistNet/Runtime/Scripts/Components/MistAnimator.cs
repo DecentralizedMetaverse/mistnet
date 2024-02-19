@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -13,20 +12,20 @@ namespace MistNet
     public class MistAnimator : MonoBehaviour
     {
         private static readonly float UpdateIntervalTimeSec = 0.5f;
-        private CancellationTokenSource _tokenSource = new ();
-        public Animator Animator { get; private set; }
+        private readonly CancellationTokenSource _tokenSource = new ();
+        public Animator Animator { get; set; }
         [SerializeField] private AnimatorState[] animatorState = new[]
         {
-            new AnimatorState { StateName = "Speed", Type = AnimatorVariableType.Float },
-            new AnimatorState { StateName = "MotionSpeed", Type = AnimatorVariableType.Float },
-            new AnimatorState { StateName = "Jump", Type = AnimatorVariableType.Bool },
+            new AnimatorState { StateName = "Speed", Type = AnimatorControllerParameterType.Float },
+            new AnimatorState { StateName = "MotionSpeed", Type = AnimatorControllerParameterType.Float },
+            new AnimatorState { StateName = "Jump", Type = AnimatorControllerParameterType.Bool },
         };
 
         [Serializable]
         public class AnimatorState
         {
             public string StateName;
-            public AnimatorVariableType Type;
+            public AnimatorControllerParameterType Type;
             public int Hash => _hash != 0 ? _hash : _hash = Animator.StringToHash(StateName);
             public bool BoolValue { get; set; }
             public float FloatValue { get; set; }
@@ -48,14 +47,6 @@ namespace MistNet
             public int IntValue { get; set; }
             private bool _triggerValue;
             private int _hash;
-        }
-
-        public enum AnimatorVariableType
-        {
-            Bool,
-            Float,
-            Int,
-            Trigger,
         }
         
         private MistSyncObject _syncObject;
@@ -104,7 +95,6 @@ namespace MistNet
         
         private void SendAnimState()
         {
-            
             var stateText = JsonConvert.SerializeObject(animatorState);
             var sendData = new P_Animation
             {
@@ -115,9 +105,9 @@ namespace MistNet
             MistManager.I.SendAll(MistNetMessageType.Animation, bytes);
         }
         
-        public void ReceiveAnimState(string stateText)
+        public void ReceiveAnimState(P_Animation receiveData)
         {
-            var state = JsonConvert.DeserializeObject<AnimatorState[]>(stateText);
+            var state = JsonConvert.DeserializeObject<AnimatorState[]>(receiveData.State);
             foreach (var s in state)
             {
                 _animStateDict[s.StateName] = s;
@@ -130,16 +120,16 @@ namespace MistNet
             {
                 switch (state.Type)
                 {
-                    case AnimatorVariableType.Bool:
+                    case AnimatorControllerParameterType.Bool:
                         Animator.SetBool(state.Hash, _animStateDict[state.StateName].BoolValue);
                         break;
-                    case AnimatorVariableType.Float:
+                    case AnimatorControllerParameterType.Float:
                         Animator.SetFloat(state.Hash, _animStateDict[state.StateName].FloatValue);
                         break;
-                    case AnimatorVariableType.Int:
+                    case AnimatorControllerParameterType.Int:
                         Animator.SetInteger(state.Hash, _animStateDict[state.StateName].IntValue);
                         break;
-                    case AnimatorVariableType.Trigger:
+                    case AnimatorControllerParameterType.Trigger:
                         if (_animStateDict[state.StateName].TriggerValue)
                         {
                             Animator.SetTrigger(state.Hash);
@@ -155,16 +145,16 @@ namespace MistNet
             {
                 switch (state.Type)
                 {
-                    case AnimatorVariableType.Bool:
+                    case AnimatorControllerParameterType.Bool:
                         state.BoolValue = Animator.GetBool(state.Hash);
                         break;
-                    case AnimatorVariableType.Float:
+                    case AnimatorControllerParameterType.Float:
                         state.FloatValue = Animator.GetFloat(state.Hash);
                         break;
-                    case AnimatorVariableType.Int:
+                    case AnimatorControllerParameterType.Int:
                         state.IntValue = Animator.GetInteger(state.Hash);
                         break;
-                    case AnimatorVariableType.Trigger:
+                    case AnimatorControllerParameterType.Trigger:
                         state.TriggerValue = Animator.GetBool(state.Hash);
                         break;
                 }

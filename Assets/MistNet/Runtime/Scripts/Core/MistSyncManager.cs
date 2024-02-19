@@ -26,6 +26,7 @@ namespace MistNet
             MistManager.I.AddRPC(MistNetMessageType.ObjectInstantiate,
                 (a, b, c) => ReceiveObjectInstantiateInfo(a, b, c).Forget());
             MistManager.I.AddRPC(MistNetMessageType.Location, ReceiveLocation);
+            MistManager.I.AddRPC(MistNetMessageType.Animation, ReceiveAnimation);
         }
 
         public void SendObjectInstantiateInfo()
@@ -150,6 +151,13 @@ namespace MistNet
             }
 
             _syncAnimators.Remove(syncObject.Id);
+        }
+        
+        private void ReceiveAnimation(byte[] data, string sourceId, string _)
+        {
+            var receiveData = MemoryPackSerializer.Deserialize<P_Animation>(data);
+            if (!_syncAnimators.TryGetValue(receiveData.ObjId, out var syncAnimator)) return;
+            syncAnimator.ReceiveAnimState(receiveData);
         }
     }
 }
