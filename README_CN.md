@@ -1,6 +1,10 @@
 # MistNet
 這是一個完全分散型的網絡庫。
 
+**實作範例**
+
+https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/cd4a1d95-3422-4b07-b9b6-21f8c63cd1f8
+
 # 特點
 - 使用部分網狀P2P進行連接。
 - 沒有中央服務器。
