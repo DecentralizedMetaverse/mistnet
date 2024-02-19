@@ -112,6 +112,8 @@ namespace MistNet
 
         private void SetAnimatorState()
         {
+            if(Animator == null) return;
+            
             foreach (var state in _animStateDict.Values)
             {
                 switch (state.Type)
