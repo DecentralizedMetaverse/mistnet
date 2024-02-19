@@ -78,34 +78,17 @@ namespace MistNet
             var peerData = _dict[id];
             peerData.Id = id;
             peerData.Peer.Id = id;
-            peerData.Chunk = ParseChunk(data.Chunk);
             peerData.Position = data.Position;
             peerData.CurrentConnectNum = data.CurrentConnectNum;
             peerData.MinConnectNum = data.MinConnectNum;
             peerData.LimitConnectNum = data.LimitConnectNum;
             peerData.MaxConnectNum = data.MaxConnectNum;
         }
-
-        public (int, int, int) ParseChunk(string chunk)
-        {
-            var split = chunk.Split(",").Select(int.Parse).ToArray();
-            return (split[0], split[1], split[2]);
-        }
-
-        public string ParseChunk((int, int, int) chunk)
-        {
-            return $"{chunk.Item1}, {chunk.Item2}, {chunk.Item3}";
-        }
     }
 
     public class MistPeerDataElement
     {
         public MistPeer Peer;
-        // public string Id;
-        // public readonly Chunk Chunk = new();
-        // public bool IsConnected => Peer.Connection.ConnectionState == RTCPeerConnectionState.Connected;
-        // public AudioClip Voice;
-        public (int, int, int) Chunk;
         public string Id;
         public Vector3 Position;
         public int CurrentConnectNum;
