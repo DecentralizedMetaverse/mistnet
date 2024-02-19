@@ -115,7 +115,6 @@ namespace MistNet
                         break;
                     case AnimatorControllerParameterType.Float:
                         Animator.SetFloat(stateHash, state.FloatValue);
-                        Debug.Log($"SetFloat: {state.StateName} {state.FloatValue} {_syncObject.OwnerId}");
                         break;
                     case AnimatorControllerParameterType.Int:
                         Animator.SetInteger(stateHash, state.IntValue);
