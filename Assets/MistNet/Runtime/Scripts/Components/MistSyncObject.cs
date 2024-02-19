@@ -19,8 +19,13 @@ namespace MistNet
         private void Awake()
         {
             gameObject.TryGetComponent(out MistTransform);
+        }
+
+        private void Start()
+        {
             RegisterRPC();
         }
+
         private void OnDestroy()
         {
             foreach (var rpc in _rpcList)
