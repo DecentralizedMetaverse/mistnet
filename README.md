@@ -4,6 +4,12 @@
 
 完全分散型ネットワークライブラリです
 
+**実装例**
+
+https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/cd4a1d95-3422-4b07-b9b6-21f8c63cd1f8
+
+
+
 # 特徴
 - パーシャルメッシュ型P2Pで接続を行います
 - 中央となるサーバーが存在しません
