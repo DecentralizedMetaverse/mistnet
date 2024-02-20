@@ -123,6 +123,7 @@ namespace MistNet
                         if (state.TriggerValue)
                         {
                             Animator.SetTrigger(stateHash);
+                            state.TriggerValue = false;
                         }
                         break;
                 }
