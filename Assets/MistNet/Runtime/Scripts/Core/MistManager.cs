@@ -121,6 +121,18 @@ namespace MistNet
             _functionArgsLength.Remove(key);
         }
 
+        public void RPC(string targetId, string key, params object[] args)
+        {
+            var argsString = string.Join(",", args);
+            var sendData = new P_RPC
+            {
+                Method = key,
+                Args = argsString,
+            };
+            var bytes = MemoryPackSerializer.Serialize(sendData);
+            Send(MistNetMessageType.RPC, bytes, targetId);
+        }
+        
         public void RPCAll(string key, params object[] args)
         {
             var argsString = string.Join(",", args);
@@ -133,16 +145,10 @@ namespace MistNet
             SendAll(MistNetMessageType.RPC, bytes);
         }
 
-        public void RPC(string targetId, string key, params object[] args)
+        public void RPCAllWithSelf(string key, params object[] args)
         {
-            var argsString = string.Join(",", args);
-            var sendData = new P_RPC
-            {
-                Method = key,
-                Args = argsString,
-            };
-            var bytes = MemoryPackSerializer.Serialize(sendData);
-            Send(MistNetMessageType.RPC, bytes, targetId);
+            RPCAll(key, args);
+            _functions[key].DynamicInvoke(args);
         }
 
         private void OnRPC(byte[] data, string sourceId, string senderId)

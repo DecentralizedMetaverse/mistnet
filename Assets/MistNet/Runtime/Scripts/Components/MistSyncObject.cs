@@ -48,16 +48,22 @@ namespace MistNet
             if (IsOwner) MistSyncManager.I.SelfSyncObject = this;
         }
 
+        public void RPC(string targetId, string key, params object[] args)
+        {
+            var keyName = $"{Id}_{key}";
+            MistManager.I.RPC(targetId, keyName, args);
+        }
+        
         public void RPCAll(string key, params object[] args)
         {
             var keyName = $"{Id}_{key}";
             MistManager.I.RPCAll(keyName, args);
         }
         
-        public void RPC(string targetId, string key, params object[] args)
+        public void RPCAllWithSelf(string key, params object[] args)
         {
             var keyName = $"{Id}_{key}";
-            MistManager.I.RPC(targetId, keyName, args);
+            MistManager.I.RPCAllWithSelf(keyName, args);
         }
 
         private void RegisterRPC()

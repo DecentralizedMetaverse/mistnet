@@ -246,7 +246,6 @@ namespace MistNet
                 Id = MistManager.I.MistPeerData.SelfId,
                 Position = MistSyncManager.I.SelfSyncObject.transform.position,
                 CurrentConnectNum = MistManager.I.MistPeerData.GetConnectedPeer.Count,
-                MinConnectNum = MistConfig.MinConnection,
                 LimitConnectNum = MistConfig.LimitConnection,
                 MaxConnectNum = MistConfig.MaxConnection,
             };
