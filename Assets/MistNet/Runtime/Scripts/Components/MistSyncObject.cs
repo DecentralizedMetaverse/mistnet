@@ -3,18 +3,26 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace MistNet
 {
     public class MistSyncObject : MonoBehaviour
     {
+        private const float WaitTimeSec = 0.2f;
+
         public string Id { get; private set; }
         public string PrefabAddress { get; private set; }
         public string OwnerId { get; private set; }
         public bool IsOwner { get; private set; } = true;
         [HideInInspector] public MistTransform MistTransform;
+
         private readonly List<string> _rpcList = new();
+        private PropertyInfo[] _propertiesToWatch;
+        private readonly Dictionary<string, object> _propertyValues = new();
+        private CancellationTokenSource _tokenSource; 
 
         private void Awake()
         {
@@ -23,11 +31,15 @@ namespace MistNet
 
         private void Start()
         {
-            RegisterRPC();
+            _tokenSource = new();
+            WatchPropertiesAsync(_tokenSource.Token).Forget();
+            Register();
         }
 
         private void OnDestroy()
         {
+            _tokenSource.Cancel();
+            
             foreach (var rpc in _rpcList)
             {
                 MistManager.I.RemoveRPC(rpc);
@@ -66,7 +78,7 @@ namespace MistNet
             MistManager.I.RPCAllWithSelf(keyName, args);
         }
 
-        private void RegisterRPC()
+        private void Register()
         {
             // 子階層を含むすべてのComponentsを取得
             var components = gameObject.GetComponentsInChildren<Component>();
@@ -78,23 +90,58 @@ namespace MistNet
                     .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                     .Where(m => m.GetCustomAttributes(typeof(MistRpcAttribute), false).Length > 0);
 
-                foreach (var methodInfo in methodsWithAttribute)
-                {
-                    Debug.Log($"Found method: {methodInfo.Name} in component: {component.GetType().Name}");
-                    // 引数の種類に応じたDelegateを作成
-                    var argTypes = methodInfo.GetParameters().Select(p => p.ParameterType).ToArray();
-
-                    // 返り値がvoidかどうか
-                    var delegateType = methodInfo.ReturnType == typeof(void)
-                        ? Expression.GetActionType(argTypes)
-                        : Expression.GetFuncType(argTypes.Concat(new[] { methodInfo.ReturnType }).ToArray());
-
-                    var delegateInstance = Delegate.CreateDelegate(delegateType, component, methodInfo);
-                    var keyName = $"{Id}_{delegateInstance.Method.Name}";
-                    _rpcList.Add(keyName);
-                    MistManager.I.AddRPC(keyName, delegateInstance);
-                }
+                RegisterRPCMethods(methodsWithAttribute, component);
+                
+                
+                _propertiesToWatch = component.GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                    .Where(prop => Attribute.IsDefined(prop, typeof(MistSyncAttribute))).ToArray();
             }
         }
+        
+        private void RegisterRPCMethods(IEnumerable<MethodInfo> methodsWithAttribute, Component component)
+        {
+            foreach (var methodInfo in methodsWithAttribute)
+            {
+                Debug.Log($"Found method: {methodInfo.Name} in component: {component.GetType().Name}");
+                // 引数の種類に応じたDelegateを作成
+                var argTypes = methodInfo.GetParameters().Select(p => p.ParameterType).ToArray();
+
+                // 返り値がvoidかどうか
+                var delegateType = methodInfo.ReturnType == typeof(void)
+                    ? Expression.GetActionType(argTypes)
+                    : Expression.GetFuncType(argTypes.Concat(new[] { methodInfo.ReturnType }).ToArray());
+
+                var delegateInstance = Delegate.CreateDelegate(delegateType, component, methodInfo);
+                var keyName = $"{Id}_{delegateInstance.Method.Name}";
+                _rpcList.Add(keyName);
+                MistManager.I.AddRPC(keyName, delegateInstance);
+            }
+        }
+        
+        private async UniTask WatchPropertiesAsync(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested) 
+            {
+                foreach (var property in _propertiesToWatch)
+                {
+                    // 保存されたプロパティ情報を使用して値を取得し、ログに出力
+                    var value = property.GetValue(this);
+                    if (!_propertyValues.TryGetValue(property.Name, out var previousValue))
+                    {
+                        _propertyValues.Add(property.Name, value);
+                        continue;
+                    }
+                    
+                    if (previousValue.Equals(value)) continue;
+                    
+                    _propertyValues[property.Name] = value;
+                    Debug.Log($"Property: {property.Name}, Value: {value}");
+                }
+
+                await UniTask.Delay(TimeSpan.FromSeconds(WaitTimeSec), cancellationToken: token);
+            }
+        }
+
+        
     }
 }

@@ -2,13 +2,21 @@ using System;
 using MistNet;
 using UnityEngine;
 
-public class MistTestCode : MonoBehaviour
+public class MistTestCode : MistBehaviour
 {
-    [SerializeField] private MistSyncObject syncObject;
     [SerializeField] private Animator animator;
     [SerializeField] private MistAnimator mistAnimator;
     private static readonly int Speed = Animator.StringToHash("Speed");
     private float _speed;
+    
+    [MistSync(OnChanged = nameof(OnChanged))]
+    private string _userName { get; set; }
+    
+    [MistSync]
+    private int HP { get; set; }
+
+    [MistSync] private int mp;
+    
     private void Start()
     {
         mistAnimator.Animator = animator;
@@ -16,11 +24,17 @@ public class MistTestCode : MonoBehaviour
         // MistManager.I.RPCAll(nameof(RPC_Test2), "abc", 3, 0.1f);
     }
 
+    private void OnChanged()
+    {
+        
+    }
+
     private void Update()
     {
-        if (!syncObject.IsOwner) return;
+        if (!SyncObject.IsOwner) return;
         _speed += Time.deltaTime;
         animator.SetFloat(Speed, _speed);
+        _userName = $"{_speed}";
     }
 
     [MistRpc]

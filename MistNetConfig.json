@@ -1,6 +1,5 @@
 {
     "SignalingServerAddress": "ws://localhost:8080/ws",
-    "MinConnection": 2,
     "LimitConnection": 6,
     "MaxConnection": 10
 }
