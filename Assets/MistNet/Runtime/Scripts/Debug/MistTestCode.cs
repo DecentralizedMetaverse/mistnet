@@ -8,14 +8,16 @@ public class MistTestCode : MistBehaviour
     [SerializeField] private MistAnimator mistAnimator;
     private static readonly int Speed = Animator.StringToHash("Speed");
     private float _speed;
+
+    [SerializeField] private bool mao;
     
     [MistSync(OnChanged = nameof(OnChanged))]
     private string _userName { get; set; }
     
-    [MistSync]
-    private int HP { get; set; }
+    // [MistSync]
+    // private int HP { get; set; }
 
-    [MistSync] private int mp;
+    // [MistSync] private int mp;
     
     private void Start()
     {
@@ -31,10 +33,16 @@ public class MistTestCode : MistBehaviour
 
     private void Update()
     {
-        if (!SyncObject.IsOwner) return;
-        _speed += Time.deltaTime;
+        if (!SyncObject.IsOwner)
+        {
+            Debug.Log($"Another: {_userName}");
+            return;
+        }
+        if(mao) _speed += Time.deltaTime;
+        else _speed -= Time.deltaTime;
+        
         animator.SetFloat(Speed, _speed);
-        _userName = $"{_speed}";
+        _userName = $"aaa{_speed}";
     }
 
     [MistRpc]

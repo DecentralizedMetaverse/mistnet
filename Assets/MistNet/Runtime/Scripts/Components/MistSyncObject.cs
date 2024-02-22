@@ -11,7 +11,7 @@ namespace MistNet
 {
     public class MistSyncObject : MonoBehaviour
     {
-        private const float WaitTimeSec = 0.2f;
+        private const float WaitTimeSec = 0.5f;
 
         public string Id { get; private set; }
         public string PrefabAddress { get; private set; }
@@ -20,9 +20,9 @@ namespace MistNet
         [HideInInspector] public MistTransform MistTransform;
 
         private readonly List<string> _rpcList = new();
-        private PropertyInfo[] _propertiesToWatch;
-        private readonly Dictionary<string, object> _propertyValues = new();
-        private CancellationTokenSource _tokenSource; 
+        private readonly List<(Component, PropertyInfo)> _propertyList = new();
+        private readonly Dictionary<string, object> _propertyValueDict = new();
+        private CancellationTokenSource _tokenSource;
 
         private void Awake()
         {
@@ -32,14 +32,14 @@ namespace MistNet
         private void Start()
         {
             _tokenSource = new();
-            WatchPropertiesAsync(_tokenSource.Token).Forget();
             Register();
+            if(IsOwner) WatchPropertiesAsync(_tokenSource.Token).Forget();
         }
 
         private void OnDestroy()
         {
             _tokenSource.Cancel();
-            
+
             foreach (var rpc in _rpcList)
             {
                 MistManager.I.RemoveRPC(rpc);
@@ -65,13 +65,13 @@ namespace MistNet
             var keyName = $"{Id}_{key}";
             MistManager.I.RPC(targetId, keyName, args);
         }
-        
+
         public void RPCAll(string key, params object[] args)
         {
             var keyName = $"{Id}_{key}";
             MistManager.I.RPCAll(keyName, args);
         }
-        
+
         public void RPCAllWithSelf(string key, params object[] args)
         {
             var keyName = $"{Id}_{key}";
@@ -91,13 +91,43 @@ namespace MistNet
                     .Where(m => m.GetCustomAttributes(typeof(MistRpcAttribute), false).Length > 0);
 
                 RegisterRPCMethods(methodsWithAttribute, component);
-                
-                
-                _propertiesToWatch = component.GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                    .Where(prop => Attribute.IsDefined(prop, typeof(MistSyncAttribute))).ToArray();
+
+
+                var propertyInfos = component.GetType()
+                    .GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                    .Where(prop => Attribute.IsDefined(prop, typeof(MistSyncAttribute))).ToList();
+
+                RegisterSyncProperties(propertyInfos, component);
             }
         }
-        
+
+        /// <summary>
+        /// 他のPeerからのpropertyの変更を受け取るための処理
+        /// </summary>
+        /// <param name="propertyInfos"></param>
+        /// <param name="component"></param>
+        private void RegisterSyncProperties(List<PropertyInfo> propertyInfos, Component component)
+        {
+            foreach (var property in propertyInfos)
+            {
+                _propertyList.Add((component, property));
+
+                var keyName = $"{Id}_{property.Name}";
+
+                var delegateType = typeof(Action<>).MakeGenericType(property.PropertyType);
+                var methodInfo = property.SetMethod;
+                var delegateInstance = Delegate.CreateDelegate(delegateType, component, methodInfo);
+
+                _rpcList.Add(keyName);
+                MistManager.I.AddRPC(keyName, delegateInstance);
+            }
+        }
+
+        /// <summary>
+        /// 他のPeerからのRPCを受け取るための処理
+        /// </summary>
+        /// <param name="methodsWithAttribute"></param>
+        /// <param name="component"></param>
         private void RegisterRPCMethods(IEnumerable<MethodInfo> methodsWithAttribute, Component component)
         {
             foreach (var methodInfo in methodsWithAttribute)
@@ -117,31 +147,32 @@ namespace MistNet
                 MistManager.I.AddRPC(keyName, delegateInstance);
             }
         }
-        
+
         private async UniTask WatchPropertiesAsync(CancellationToken token)
         {
-            while (!token.IsCancellationRequested) 
+            while (!token.IsCancellationRequested)
             {
-                foreach (var property in _propertiesToWatch)
+                foreach (var (component, property) in _propertyList)
                 {
                     // 保存されたプロパティ情報を使用して値を取得し、ログに出力
-                    var value = property.GetValue(this);
-                    if (!_propertyValues.TryGetValue(property.Name, out var previousValue))
+                    var value = property.GetValue(component);
+                    var keyName = $"{Id}_{property.Name}";
+                    
+                    if (!_propertyValueDict.TryGetValue(keyName, out var previousValue))
                     {
-                        _propertyValues.Add(property.Name, value);
+                        if(value != null) _propertyValueDict.Add(keyName, value);
                         continue;
                     }
-                    
+
                     if (previousValue.Equals(value)) continue;
-                    
-                    _propertyValues[property.Name] = value;
+
+                    _propertyValueDict[keyName] = value;
                     Debug.Log($"Property: {property.Name}, Value: {value}");
+                    MistManager.I.RPCAll(keyName, value);
                 }
 
                 await UniTask.Delay(TimeSpan.FromSeconds(WaitTimeSec), cancellationToken: token);
             }
         }
-
-        
     }
 }
