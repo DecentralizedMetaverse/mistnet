@@ -28,7 +28,7 @@ public class MistTestCode : MistBehaviour
 
     private void OnChanged()
     {
-        
+        Debug.Log($"喵喵喵{_userName}");
     }
 
     private void Update()

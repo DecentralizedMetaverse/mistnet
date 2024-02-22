@@ -33,7 +33,7 @@ namespace MistNet
         {
             _tokenSource = new();
             Register();
-            if(IsOwner) WatchPropertiesAsync(_tokenSource.Token).Forget();
+            if (IsOwner) WatchPropertiesAsync(_tokenSource.Token).Forget();
         }
 
         private void OnDestroy()
@@ -113,13 +113,33 @@ namespace MistNet
                 _propertyList.Add((component, property));
 
                 var keyName = $"{Id}_{property.Name}";
-
                 var delegateType = typeof(Action<>).MakeGenericType(property.PropertyType);
-                var methodInfo = property.SetMethod;
-                var delegateInstance = Delegate.CreateDelegate(delegateType, component, methodInfo);
+
+                // MistSyncAttributeからOnChangedメソッド名を取得
+                var mistSyncAttr = (MistSyncAttribute)Attribute.GetCustomAttribute(property, typeof(MistSyncAttribute));
+                var onChangedMethodName = mistSyncAttr?.OnChanged;
+
+                MethodInfo onChangedMethodInfo = null;
+                if (!string.IsNullOrEmpty(onChangedMethodName))
+                {
+                    onChangedMethodInfo = component.GetType().GetMethod(onChangedMethodName,
+                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                }
+
+                var originalSetMethod = property.SetMethod;
+
+                // Wrapperを作成
+                Action<object> wrapper = value =>
+                {
+                    originalSetMethod.Invoke(component, new[] { value });
+                    onChangedMethodInfo?.Invoke(component, null);
+                };
+
+                // 登録
+                var wrapperDelegate = Delegate.CreateDelegate(delegateType, wrapper.Target, wrapper.Method);
 
                 _rpcList.Add(keyName);
-                MistManager.I.AddRPC(keyName, delegateInstance);
+                MistManager.I.AddRPC(keyName, wrapperDelegate);
             }
         }
 
@@ -157,10 +177,10 @@ namespace MistNet
                     // 保存されたプロパティ情報を使用して値を取得し、ログに出力
                     var value = property.GetValue(component);
                     var keyName = $"{Id}_{property.Name}";
-                    
+
                     if (!_propertyValueDict.TryGetValue(keyName, out var previousValue))
                     {
-                        if(value != null) _propertyValueDict.Add(keyName, value);
+                        if (value != null) _propertyValueDict.Add(keyName, value);
                         continue;
                     }
 
