@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace MistNet
@@ -8,9 +9,14 @@ namespace MistNet
         public readonly List<string> PeerConnectionPriorityList = new(); // id
         public readonly HashSet<string> PeerDisconnectRequestList = new(); // id
         public readonly Dictionary<string, int> DistanceDict = new(); // key: peerId, value: distance
+        private readonly List<int> _radiusAndSendInterval;
 
         public MistOptimizationData()
         {
+            // RadiusAndSendIntervalのキーを距離が小さい順にソート
+            _radiusAndSendInterval = new List<int>(MistConfig.RadiusAndSendIntervalSeconds.Keys);
+            _radiusAndSendInterval.Sort();
+            
             PeerConnectionPriorityList.Clear();
             DistanceDict.Clear();
         }
@@ -62,16 +68,14 @@ namespace MistNet
 
         private void CategorizeClientByDistance(string id, float distance)
         {
-            var category = distance switch
+            var category = _radiusAndSendInterval.Last(); // 一番遠い距離のカテゴリー
+            foreach (var key in _radiusAndSendInterval.Where(key => distance <= key))
             {
-                <= 3 => 3,
-                <= 6 => 6,
-                <= 12 => 12,
-                <= 24 => 24,
-                <= 48 => 48,
-                _ => 96
-            };
+                category = key;
+                break;
+            }
 
+            Debug.Log(category);
             MistSendingOptimizer.I.SetCategory(id, category);
         }
     }
