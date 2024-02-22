@@ -10,6 +10,10 @@ namespace MistNet
         public static int LimitConnection { get; private set; } = 20;
         public static int MaxConnection { get; private set; } = 80;
         public static string SignalingServerAddress { get; private set; } = "ws://localhost:8080/ws";
+        public static string[] StunUrls { get; private set; } =
+        {
+            "stun:stun.l.google.com:19302",
+        };
         
         [Serializable]
         private class MistConfigData
@@ -17,6 +21,7 @@ namespace MistNet
             public string SignalingServerAddress;
             public int LimitConnection;
             public int MaxConnection;
+            public string[] StunUrls;
         }
 
         public void ReadConfig()
@@ -27,6 +32,7 @@ namespace MistNet
             LimitConnection = config.LimitConnection;
             MaxConnection = config.MaxConnection;
             SignalingServerAddress = config.SignalingServerAddress;
+            StunUrls = config.StunUrls;
         }
 
         public void WriteConfig()
@@ -35,7 +41,8 @@ namespace MistNet
             {
                 LimitConnection = LimitConnection,
                 MaxConnection = MaxConnection,  
-                SignalingServerAddress = SignalingServerAddress
+                SignalingServerAddress = SignalingServerAddress,
+                StunUrls = StunUrls
             };
             // 整形表示で書き込み
             var txt = JsonUtility.ToJson(config, true);

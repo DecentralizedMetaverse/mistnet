@@ -20,7 +20,7 @@ namespace MistNet
         {
             I = this;
             SelfId = Guid.NewGuid().ToString("N");
-            Debug.Log($"[Self ID] {SelfId}");
+            MistDebug.Log($"[Self ID] {SelfId}");
             _dict.Clear();
         }
         
@@ -55,9 +55,9 @@ namespace MistNet
         {
             if (string.IsNullOrEmpty(id))
             {
-                Debug.LogError("GetPeerData id is null");
+                MistDebug.LogError("GetPeerData id is null");
             }
-            Debug.Log($"[GetPeerData] {id}");
+            MistDebug.Log($"[GetPeerData] {id}");
             return _dict.TryGetValue(id, out var peerData) ? 
                 peerData : null;
         }
@@ -188,7 +188,7 @@ namespace MistNet
 
         private void GetSurroundingChunks()
         {
-            Debug.Log("GetSurroundingChunks");
+            MistDebug.Log("GetSurroundingChunks");
             for(var x = 0; x < ChunkSize; x++)
             {
                 for(var y = 0; y < ChunkSize; y++)

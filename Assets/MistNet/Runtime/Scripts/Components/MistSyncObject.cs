@@ -152,7 +152,7 @@ namespace MistNet
         {
             foreach (var methodInfo in methodsWithAttribute)
             {
-                Debug.Log($"Found method: {methodInfo.Name} in component: {component.GetType().Name}");
+                MistDebug.Log($"Found method: {methodInfo.Name} in component: {component.GetType().Name}");
                 // 引数の種類に応じたDelegateを作成
                 var argTypes = methodInfo.GetParameters().Select(p => p.ParameterType).ToArray();
 
@@ -187,7 +187,7 @@ namespace MistNet
                     if (previousValue.Equals(value)) continue;
 
                     _propertyValueDict[keyName] = value;
-                    Debug.Log($"Property: {property.Name}, Value: {value}");
+                    MistDebug.Log($"Property: {property.Name}, Value: {value}");
                     MistManager.I.RPCAll(keyName, value);
                 }
 

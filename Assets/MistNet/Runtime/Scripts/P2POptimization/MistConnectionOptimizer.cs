@@ -26,7 +26,6 @@ namespace MistNet
         {
             public string Id { get; set; }
             public float Distance { get; set; }
-            public (int, int, int) Chunk { get; set; }
         }
 
         private void Awake()
@@ -43,12 +42,12 @@ namespace MistNet
             SendPeerTableWithDelay().Forget();
         }
 
-        private void OnPeerTableResponse(byte[] data, string sourceId, string senderId)
+        private void OnPeerTableResponse(byte[] data, string sourceId)
         {
-            Debug.Log($"[PeerDataResponse] {sourceId} -> received");
+            MistDebug.Log($"[PeerDataResponse] {sourceId} -> received");
 
             var message = MemoryPackSerializer.Deserialize<P_PeerData>(data);
-            MistManager.I.RoutingTable.Add(message.Id, senderId);
+            // MistManager.I.RoutingTable.Add(message.Id, senderId);
 
             if (string.IsNullOrEmpty(message.Id)) return;
             if (message.Id == MistManager.I.MistPeerData.SelfId) return;
@@ -72,7 +71,7 @@ namespace MistNet
 
             // 要素を距離に基づいてソート
             _sortedPeerList = SortPeerListByDistance(allPeerList);
-            Debug.Log("[Debug] ソート完了");
+            MistDebug.Log("[Debug] ソート完了");
             
             var debugText = "[SortedTable]\n";
             int peerCount = 0;
@@ -90,18 +89,18 @@ namespace MistNet
                         peerData.CurrentConnectNum < peerData.MaxConnectNum)
                     {
                         SendConnectRequest(id);
-                        Debug.Log("[Debug] SendConnectRequest");
+                        MistDebug.Log("[Debug] SendConnectRequest");
                     }
                 }
                 else if (peerData.State == MistPeerState.Connected)
                 {
                     SendDisconnectRequest(id);
-                    Debug.Log("[Debug] SendDisconnectRequest");
+                    MistDebug.Log("[Debug] SendDisconnectRequest");
                 } 
 
                 peerCount++;
             }
-            Debug.Log(debugText);
+            MistDebug.Log(debugText);
         }
 
         private void ShowRoutingTable()
@@ -113,7 +112,7 @@ namespace MistNet
                 text += $"{kv.Key} {kv.Value.CurrentConnectNum} {kv.Value.MaxConnectNum} {kv.Value.State}\n";
             }
 
-            Debug.Log(text);
+            MistDebug.Log(text);
         }
 
         /// <summary>
@@ -159,7 +158,7 @@ namespace MistNet
         /// <param name="data"></param>
         /// <param name="sourceId"></param>
         /// <param name="_"></param>
-        private void OnDisconnectRequest(byte[] data, string sourceId, string _)
+        private void OnDisconnectRequest(byte[] data, string sourceId)
         {
             var disconnectList = MistOptimizationManager.I.Data.PeerDisconnectRequestList;
             if (disconnectList.Contains(sourceId))
@@ -179,7 +178,7 @@ namespace MistNet
             AddDisconnectListAndDelayCancel(sourceId).Forget();
         }
 
-        private void OnDisconnectResponse(byte[] data, string sourceId, string _)
+        private void OnDisconnectResponse(byte[] data, string sourceId)
         {
             if (!IsConnectionAtLimit()) return;
 
@@ -219,7 +218,7 @@ namespace MistNet
             if (id == MistManager.I.MistPeerData.SelfId) return; // 自分自身には接続しない
             if (CompareId(id)) return;
 
-            Debug.Log($"[ConnectRequest] {MistManager.I.MistPeerData.SelfId} -> {id}");
+            MistDebug.Log($"[ConnectRequest] {MistManager.I.MistPeerData.SelfId} -> {id}");
             MistManager.I.Connect(id).Forget();
         }
         
@@ -237,7 +236,7 @@ namespace MistNet
             List<byte[]> sendList = new();
             if (MistManager.I.MistPeerData.SelfId == null)
             {
-                Debug.LogError("SelfId is null");
+                MistDebug.LogError("SelfId is null");
             }
 
             // 自身の情報

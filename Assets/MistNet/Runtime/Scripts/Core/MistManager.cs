@@ -16,26 +16,30 @@ namespace MistNet
     public class MistManager : MonoBehaviour
     {
         private static readonly float WaitConnectingTimeSec = 3f;
-        public readonly MistConfig Config = new();
+        
+        [SerializeField] private bool showLog = false;
+        
         public static MistManager I;
-
         public MistPeerData MistPeerData;
-        public readonly MistRoutingTable RoutingTable = new();
         public Action<string> ConnectAction;
 
-        private readonly Dictionary<MistNetMessageType, Action<byte[], string, string>>
-            _onMessageDict = new(); // targetId, viaId
-
-        private static Dictionary<string, Delegate> _functions = new();
-        private Dictionary<string, int> _functionArgsLength = new();
-
+        private readonly MistRoutingTable _routingTable = new();
+        private readonly MistConfig _config = new();
+        private readonly Dictionary<MistNetMessageType, Action<byte[], string>> _onMessageDict = new(); 
+        private readonly Dictionary<string, Delegate> _functions = new();
+        private readonly Dictionary<string, int> _functionArgsLength = new();
+        
+        private void OnValidate()
+        {
+            MistDebug.ShowLog = showLog;
+        }
 
         public void Awake()
         {
             MistPeerData = new();
             MistPeerData.Init();
             I = this;
-            Config.ReadConfig();
+            _config.ReadConfig();
         }
 
         private void Start()
@@ -46,18 +50,12 @@ namespace MistNet
         public void OnDestroy()
         {
             MistPeerData.AllClose();
-            Config.WriteConfig();
+            _config.WriteConfig();
         }
-
-        /// <summary>
-        /// TODO: viaIdを廃止していく, chunkも廃止していく
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="data"></param>
-        /// <param name="targetId"></param>
+        
         public void Send(MistNetMessageType type, byte[] data, string targetId)
         {
-            Debug.Log($"[SEND][{type.ToString()}] -> {targetId}");
+            MistDebug.Log($"[SEND][{type.ToString()}] -> {targetId}");
 
             var message = new MistMessage
             {
@@ -70,13 +68,13 @@ namespace MistNet
 
             if (!MistPeerData.IsConnected(targetId))
             {
-                targetId = RoutingTable.Get(targetId);
-                Debug.Log($"[SEND][FORWARD] {targetId} -> {message.TargetId}");
+                targetId = _routingTable.Get(targetId);
+                MistDebug.Log($"[SEND][FORWARD] {targetId} -> {message.TargetId}");
             }
 
             if (type == MistNetMessageType.Signaling)
             {
-                Debug.Log($"[SEND][{type.ToString()}] {targetId} -> {message.TargetId}");
+                MistDebug.Log($"[SEND][{type.ToString()}] {targetId} -> {message.TargetId}");
             }
 
             if (MistPeerData.IsConnected(targetId))
@@ -97,14 +95,14 @@ namespace MistNet
 
             foreach (var peerData in MistPeerData.GetConnectedPeer)
             {
-                Debug.Log($"[SEND][{peerData.Id}] {type.ToString()}");
+                MistDebug.Log($"[SEND][{peerData.Id}] {type.ToString()}");
                 message.TargetId = peerData.Id;
                 var sendData = MemoryPackSerializer.Serialize(message);
                 peerData.Peer.Send(sendData).Forget();
             }
         }
 
-        public void AddRPC(MistNetMessageType messageType, Action<byte[], string, string> function)
+        public void AddRPC(MistNetMessageType messageType, Action<byte[], string> function)
         {
             _onMessageDict.Add(messageType, function);
         }
@@ -151,7 +149,7 @@ namespace MistNet
             _functions[key].DynamicInvoke(args);
         }
 
-        private void OnRPC(byte[] data, string sourceId, string senderId)
+        private void OnRPC(byte[] data, string sourceId)
         {
             var message = MemoryPackSerializer.Deserialize<P_RPC>(data);
             var args = ConvertStringToObjects(message.Args);
@@ -162,7 +160,6 @@ namespace MistNet
                 args.Add(new MessageInfo
                 {
                     SourceId = sourceId,
-                    SenderId = senderId,
                 });
             }
 
@@ -196,13 +193,13 @@ namespace MistNet
         public void OnMessage(byte[] data, string senderId)
         {
             var message = MemoryPackSerializer.Deserialize<MistMessage>(data);
-            Debug.Log($"[RECV][{message.Type.ToString()}] {message.Id} -> {message.TargetId}");
+            MistDebug.Log($"[RECV][{message.Type.ToString()}] {message.Id} -> {message.TargetId}");
 
             // RoutingTable.Add(message.Id, id);
 
             if (IsMessageForSelf(message))
             {
-                Debug.Log($"[Debug][RECV][SELF] {message.Type.ToString()}");
+                MistDebug.Log($"[Debug][RECV][SELF] {message.Type.ToString()}");
                 ProcessMessageForSelf(message, senderId);
                 return;
             }
@@ -210,7 +207,7 @@ namespace MistNet
             var targetId = message.TargetId;
             if (!MistPeerData.IsConnected(message.TargetId))
             {
-                targetId = RoutingTable.Get(message.TargetId);
+                targetId = _routingTable.Get(message.TargetId);
             }
 
             if (!string.IsNullOrEmpty(targetId))
@@ -218,7 +215,7 @@ namespace MistNet
                 var peer = MistPeerData.GetPeer(targetId);
                 if (peer == null) return;
                 peer.Send(data).Forget();
-                Debug.Log(
+                MistDebug.Log(
                     $"[RECV][SEND][FORWARD][{message.Type.ToString()}] {message.Id} -> {MistPeerData.I.SelfId} -> {message.TargetId}");
             }
         }
@@ -230,8 +227,8 @@ namespace MistNet
 
         private void ProcessMessageForSelf(MistMessage message, string senderId)
         {
-            MistManager.I.RoutingTable.Add(message.Id, senderId);
-            _onMessageDict[message.Type].DynamicInvoke(message.Data, message.Id, senderId);
+            _routingTable.Add(message.Id, senderId);
+            _onMessageDict[message.Type].DynamicInvoke(message.Data, message.Id);
         }
 
         public async UniTaskVoid Connect(string id)
@@ -241,14 +238,14 @@ namespace MistNet
             await UniTask.Delay(TimeSpan.FromSeconds(WaitConnectingTimeSec));
             if (MistPeerData.GetPeerData(id).State == MistPeerState.Connecting)
             {
-                Debug.Log($"[Connect] {id} is not connected");
+                MistDebug.Log($"[Connect] {id} is not connected");
                 MistPeerData.GetPeerData(id).State = MistPeerState.Disconnected;
             }
         }
 
         public void OnConnected(string id)
         {
-            Debug.Log($"[Connected] {id}");
+            MistDebug.Log($"[Connected] {id}");
 
             // InstantiateしたObject情報の送信
             MistPeerData.I.GetPeerData(id).State = MistPeerState.Connected;
@@ -258,7 +255,7 @@ namespace MistNet
 
         public void OnDisconnected(string id)
         {
-            Debug.Log($"[Disconnected] {id}");
+            MistDebug.Log($"[Disconnected] {id}");
             // MistPeerData.Dict.Remove(id);
             MistSyncManager.I.DestroyBySenderId(id);
             MistOptimizationManager.I.OnDisconnected(id);

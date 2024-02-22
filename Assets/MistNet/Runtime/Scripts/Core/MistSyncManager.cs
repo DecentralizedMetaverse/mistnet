@@ -24,7 +24,7 @@ namespace MistNet
         private void Start()
         {
             MistManager.I.AddRPC(MistNetMessageType.ObjectInstantiate,
-                (a, b, c) => ReceiveObjectInstantiateInfo(a, b, c).Forget());
+                (a, b) => ReceiveObjectInstantiateInfo(a, b).Forget());
             MistManager.I.AddRPC(MistNetMessageType.Location, ReceiveLocation);
             MistManager.I.AddRPC(MistNetMessageType.Animation, ReceiveAnimation);
         }
@@ -44,7 +44,7 @@ namespace MistNet
             }
         }
 
-        private async UniTaskVoid ReceiveObjectInstantiateInfo(byte[] data, string sourceId, string _)
+        private async UniTaskVoid ReceiveObjectInstantiateInfo(byte[] data, string sourceId)
         {
             var instantiateData = MemoryPackSerializer.Deserialize<P_ObjectInstantiate>(data);
             if (_syncObjects.ContainsKey(instantiateData.ObjId)) return;
@@ -58,7 +58,7 @@ namespace MistNet
             RegisterSyncObject(syncObject);
         }
 
-        private void ReceiveLocation(byte[] data, string sourceId, string senderId)
+        private void ReceiveLocation(byte[] data, string sourceId)
         {
             var location = MemoryPackSerializer.Deserialize<P_Location>(data);
             var syncObject = GetSyncObject(location.ObjId);
@@ -70,7 +70,7 @@ namespace MistNet
         {
             if (_syncObjects.ContainsKey(syncObject.Id))
             {
-                Debug.LogError($"Sync object with id {syncObject.Id} already exists!");
+                MistDebug.LogError($"Sync object with id {syncObject.Id} already exists!");
                 return;
             }
 
@@ -89,7 +89,7 @@ namespace MistNet
         {
             if (!_syncObjects.ContainsKey(syncObject.Id))
             {
-                Debug.LogWarning($"Sync object with id {syncObject.Id} does not exist!");
+                MistDebug.LogWarning($"Sync object with id {syncObject.Id} does not exist!");
                 return;
             }
 
@@ -108,7 +108,7 @@ namespace MistNet
         {
             if (!_syncObjects.ContainsKey(id))
             {
-                Debug.LogWarning($"Sync object with id {id} does not exist!");
+                MistDebug.LogWarning($"Sync object with id {id} does not exist!");
                 return null;
             }
 
@@ -119,7 +119,7 @@ namespace MistNet
         {
             if (!OwnerIdAndObjIdDict.ContainsKey(senderId))
             {
-                Debug.LogWarning("Already destroyed");
+                MistDebug.LogWarning("Already destroyed");
                 return;
             }
 
@@ -134,7 +134,7 @@ namespace MistNet
         {
             if (_syncAnimators.ContainsKey(syncObject.Id))
             {
-                Debug.LogError($"Sync animator with id {syncObject.Id} already exists!");
+                MistDebug.LogError($"Sync animator with id {syncObject.Id} already exists!");
                 return;
             }
 
@@ -146,14 +146,14 @@ namespace MistNet
         {
             if (!_syncAnimators.ContainsKey(syncObject.Id))
             {
-                Debug.LogWarning($"Sync animator with id {syncObject.Id} does not exist!");
+                MistDebug.LogWarning($"Sync animator with id {syncObject.Id} does not exist!");
                 return;
             }
 
             _syncAnimators.Remove(syncObject.Id);
         }
         
-        private void ReceiveAnimation(byte[] data, string sourceId, string _)
+        private void ReceiveAnimation(byte[] data, string sourceId)
         {
             var receiveData = MemoryPackSerializer.Deserialize<P_Animation>(data);
             if (!_syncAnimators.TryGetValue(receiveData.ObjId, out var syncAnimator)) return;

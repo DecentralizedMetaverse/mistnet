@@ -33,7 +33,7 @@ namespace MistNet
         /// <returns></returns>
         public async UniTask SendOffer(string targetId)
         {
-            Debug.Log($"[MistSignaling] SendOffer: {targetId}");
+            MistDebug.Log($"[MistSignaling] SendOffer: {targetId}");
             var peer = MistManager.I.MistPeerData.GetPeer(targetId);
             peer.OnCandidate = (ice) => SendCandidate(ice, targetId);
 
@@ -131,7 +131,7 @@ namespace MistNet
 
                 if(peer == null) 
                 {
-                    Debug.LogError($"[MistSignaling] peer is null");
+                    MistDebug.LogError($"[MistSignaling] peer is null");
                     return;
                 }
                 peer.AddIceCandidate(value); // TODO: Error箇所

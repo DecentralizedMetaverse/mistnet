@@ -52,7 +52,7 @@ namespace MistNet
             _receivedPosition = location.Position;
             _receivedRotation = Quaternion.Euler(location.Rotation);
             _syncIntervalTimeSecond = location.Time;
-            Debug.Log($"[{location.ObjId}] Time: {_syncIntervalTimeSecond}");
+            MistDebug.Log($"[{location.ObjId}] Time: {_syncIntervalTimeSecond}");
             _elapsedTime = 0f;
         }
 
