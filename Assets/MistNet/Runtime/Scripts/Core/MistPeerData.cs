@@ -24,11 +24,11 @@ namespace MistNet
             _dict.Clear();
         }
         
-        public void AllClose()
+        public void AllForceClose()
         {
             foreach (var peerData in _dict.Values)
             {
-                peerData.Peer.Close();
+                peerData.Peer.ForceClose();
             }
         }
 

@@ -10,11 +10,10 @@ namespace MistNet
     {
         public static MistSyncManager I { get; private set; }
         public MistSyncObject SelfSyncObject { get; set; }                  // 自身のSyncObject
-        public Dictionary<string, MistSyncObject> MySyncObjects = new();    // 自身が生成したObject一覧
-        public Dictionary<string, string> OwnerIdAndObjIdDict = new();      // ownerId, objId
-        private Dictionary<string, MistSyncObject> _syncObjects = new();    // objId, MistSyncObject
-        
-        private Dictionary<string, MistAnimator> _syncAnimators = new();    // objId, MistAnimator
+        public readonly Dictionary<string, MistSyncObject> MySyncObjects = new();    // 自身が生成したObject一覧
+        public readonly Dictionary<string, string> OwnerIdAndObjIdDict = new();      // ownerId, objId
+        private readonly Dictionary<string, MistSyncObject> _syncObjects = new();    // objId, MistSyncObject
+        private readonly Dictionary<string, MistAnimator> _syncAnimators = new();    // objId, MistAnimator
 
         private void Awake()
         {
@@ -68,13 +67,12 @@ namespace MistNet
 
         public void RegisterSyncObject(MistSyncObject syncObject)
         {
-            if (_syncObjects.ContainsKey(syncObject.Id))
+            if (!_syncObjects.TryAdd(syncObject.Id, syncObject))
             {
                 MistDebug.LogError($"Sync object with id {syncObject.Id} already exists!");
                 return;
             }
 
-            _syncObjects.Add(syncObject.Id, syncObject);
             if (syncObject.IsOwner)
             {
                 MySyncObjects.Add(syncObject.Id, syncObject);

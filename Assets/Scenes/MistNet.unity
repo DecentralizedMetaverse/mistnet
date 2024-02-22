@@ -786,6 +786,16 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2003660962140733667, guid: 701c67af5a70dfc45bd6ed39e5d18584,
         type: 3}
+      propertyPath: ShowLog
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2003660962140733667, guid: 701c67af5a70dfc45bd6ed39e5d18584,
+        type: 3}
+      propertyPath: showLog
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2003660962140733667, guid: 701c67af5a70dfc45bd6ed39e5d18584,
+        type: 3}
       propertyPath: MistPeerData
       value: 
       objectReference: {fileID: 11400000, guid: 333f24c33892e494d96271e52f4a2247,

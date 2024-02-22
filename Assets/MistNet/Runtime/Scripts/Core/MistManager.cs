@@ -49,7 +49,7 @@ namespace MistNet
 
         public void OnDestroy()
         {
-            MistPeerData.AllClose();
+            MistPeerData.AllForceClose();
             _config.WriteConfig();
         }
         

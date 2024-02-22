@@ -202,17 +202,22 @@ namespace MistNet
             _dataChannel.Close();
         }
 
+        public void ForceClose()
+        {
+            Connection.Close();
+        }
+
         private void OnIceConnectionChange(RTCIceConnectionState state)
         {
             MistDebug.Log($"[Signaling][OnIceConnectionChange] {state} -> {Id}");
 
-            if (state == RTCIceConnectionState.Connected)
+            switch (state)
             {
-            }
-            else if (state == RTCIceConnectionState.Disconnected)
-            {
-                // TODO: Disconnectedの処理を追加する
-                OnDisconnected?.Invoke(Id);
+                case RTCIceConnectionState.Connected:
+                    break;
+                case RTCIceConnectionState.Disconnected:
+                    OnDisconnected?.Invoke(Id);
+                    break;
             }
         }
 
