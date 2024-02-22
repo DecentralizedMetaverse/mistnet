@@ -28,7 +28,7 @@ namespace MistNet
             MistManager.I.AddRPC(MistNetMessageType.Animation, ReceiveAnimation);
         }
 
-        public void SendObjectInstantiateInfo()
+        public void SendObjectInstantiateInfo(string id)
         {
             var sendData = new P_ObjectInstantiate();
             foreach (var obj in MySyncObjects.Values)
@@ -39,7 +39,12 @@ namespace MistNet
                 sendData.Rotation = objTransform.rotation.eulerAngles;
                 sendData.PrefabAddress = obj.PrefabAddress;
                 var data = MemoryPackSerializer.Serialize(sendData);
-                MistManager.I.SendAll(MistNetMessageType.ObjectInstantiate, data);
+                MistManager.I.Send(MistNetMessageType.ObjectInstantiate, data, id);
+            }
+
+            foreach (var syncObject in MySyncObjects.Values)
+            {
+                syncObject.SendAllProperties();
             }
         }
 

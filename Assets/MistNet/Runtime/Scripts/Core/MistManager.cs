@@ -249,7 +249,7 @@ namespace MistNet
 
             // InstantiateしたObject情報の送信
             MistPeerData.I.GetPeerData(id).State = MistPeerState.Connected;
-            MistSyncManager.I.SendObjectInstantiateInfo();
+            MistSyncManager.I.SendObjectInstantiateInfo(id);
             MistOptimizationManager.I.OnConnected(id);
         }
 

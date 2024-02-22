@@ -75,7 +75,6 @@ namespace MistNet
                 break;
             }
 
-            Debug.Log(category);
             MistSendingOptimizer.I.SetCategory(id, category);
         }
     }
