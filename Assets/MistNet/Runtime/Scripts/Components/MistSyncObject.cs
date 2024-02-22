@@ -78,13 +78,13 @@ namespace MistNet
             MistManager.I.RPCAllWithSelf(keyName, args);
         }
         
-        public void SendAllProperties()
+        public void SendAllProperties(string id)
         {
             foreach (var (component, property) in _propertyList)
             {
                 var keyName = $"{Id}_{property.Name}";
                 var value = property.GetValue(component);
-                MistManager.I.RPCAll(keyName, value);
+                MistManager.I.RPC(id, keyName, value);
             }
         }
 

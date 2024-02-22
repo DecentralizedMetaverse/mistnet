@@ -98,10 +98,7 @@ messages:
       - name: Time
         type: long       
         
-  - name: VR
-    fields:
-      - name: 
-        type: string
+  - name: PropertyRequest            
         
   - name: Error
     fields:

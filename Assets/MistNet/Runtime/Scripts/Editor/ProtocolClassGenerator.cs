@@ -8,12 +8,12 @@ using YamlDotNet.Serialization;
 public class ProtocolClassGenerator : MonoBehaviour
 {
     private static readonly string EnumFileName = "MistNetMessageType";
-    private static readonly string ParentPath = "Assets/Scripts/MistNet";
-    private static readonly string OutputPath = "Assets/Scripts/MistNet/Protocol";
+    private static readonly string ParentPath = "Assets/MistNet/Runtime/Scripts";
+    private static readonly string OutputPath = "Assets/MistNet/Runtime/Scripts/Protocol";
     private static readonly string YamlFileName = "protocol.yaml";
 
 
-    [MenuItem("Tools/Generate Protocol Classes")]
+    [MenuItem("Tools/MistNet/Generate Protocol Classes")]
     private static void GenerateClassesFromYAML()
     {
         var data = Read($"{ParentPath}/{YamlFileName}");
@@ -24,7 +24,7 @@ public class ProtocolClassGenerator : MonoBehaviour
     private static void GenerateClasses(Dictionary<string, object> data)
     {
         var types = new List<string>();
-        foreach (var message in data["messages"] as List<object>)
+        foreach (var message in (List<object>)data["messages"])
         {
             var messageInfo = (IDictionary)message;
             var className = messageInfo["name"].ToString();

@@ -26,6 +26,7 @@ namespace MistNet
                 (a, b) => ReceiveObjectInstantiateInfo(a, b).Forget());
             MistManager.I.AddRPC(MistNetMessageType.Location, ReceiveLocation);
             MistManager.I.AddRPC(MistNetMessageType.Animation, ReceiveAnimation);
+            MistManager.I.AddRPC(MistNetMessageType.PropertyRequest, (_, sourceId) => SendAllProperties(sourceId));
         }
 
         public void SendObjectInstantiateInfo(string id)
@@ -40,11 +41,6 @@ namespace MistNet
                 sendData.PrefabAddress = obj.PrefabAddress;
                 var data = MemoryPackSerializer.Serialize(sendData);
                 MistManager.I.Send(MistNetMessageType.ObjectInstantiate, data, id);
-            }
-
-            foreach (var syncObject in MySyncObjects.Values)
-            {
-                syncObject.SendAllProperties();
             }
         }
 
@@ -82,10 +78,23 @@ namespace MistNet
             {
                 MySyncObjects.Add(syncObject.Id, syncObject);
             }
+            else
+            {
+                var sendData = new P_PropertyRequest();
+                var bytes = MemoryPackSerializer.Serialize(sendData);
+                MistManager.I.Send(MistNetMessageType.PropertyRequest, bytes, syncObject.OwnerId);
+            }
 
             OwnerIdAndObjIdDict.Add(syncObject.OwnerId, syncObject.Id);
-
             RegisterSyncAnimator(syncObject);
+        }
+
+        private void SendAllProperties(string id)
+        {
+            foreach (var obj in MySyncObjects.Values)
+            {
+                obj.SendAllProperties(id);
+            }
         }
 
         public void UnregisterSyncObject(MistSyncObject syncObject)

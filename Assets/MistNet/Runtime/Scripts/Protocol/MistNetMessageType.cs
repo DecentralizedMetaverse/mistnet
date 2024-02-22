@@ -15,5 +15,6 @@ public enum MistNetMessageType
     PeerData,
     Ping,
     Pong,
+    PropertyRequest,
     Error,
 }
