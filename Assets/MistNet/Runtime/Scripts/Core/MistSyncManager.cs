@@ -76,6 +76,9 @@ namespace MistNet
 
             if (syncObject.IsOwner)
             {
+                // 最初のGameObjectは、接続先最適化に使用するため、PlayerObjectであることを設定
+                if(MySyncObjects.Count == 0) syncObject.IsPlayerObject = true;
+                
                 MySyncObjects.Add(syncObject.Id, syncObject);
             }
             else

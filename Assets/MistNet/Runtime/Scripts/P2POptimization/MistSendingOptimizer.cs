@@ -81,6 +81,7 @@ namespace MistNet
         private void SendLocation(SendTarget target)
         {
             if (SendLocationData == null) return;
+            
             SendLocationData.Time = target.WaitTimeSec;
             var bytes = MemoryPackSerializer.Serialize(SendLocationData);
             foreach (var id in target.Ids)

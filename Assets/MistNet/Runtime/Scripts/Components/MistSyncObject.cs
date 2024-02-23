@@ -17,6 +17,7 @@ namespace MistNet
         public string PrefabAddress { get; private set; }
         public string OwnerId { get; private set; }
         public bool IsOwner { get; private set; } = true;
+        public bool IsPlayerObject { get; set; }
         [HideInInspector] public MistTransform MistTransform;
 
         private readonly List<string> _rpcList = new();
