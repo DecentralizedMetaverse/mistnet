@@ -111,6 +111,31 @@ namespace MistNet
                 RegisterSyncProperties(propertyInfos, component);
             }
         }
+        
+        /// <summary>
+        /// 他のPeerからのRPCを受け取るための処理
+        /// </summary>
+        /// <param name="methodsWithAttribute"></param>
+        /// <param name="component"></param>
+        private void RegisterRPCMethods(IEnumerable<MethodInfo> methodsWithAttribute, Component component)
+        {
+            foreach (var methodInfo in methodsWithAttribute)
+            {
+                MistDebug.Log($"Found method: {methodInfo.Name} in component: {component.GetType().Name}");
+                // 引数の種類に応じたDelegateを作成
+                var argTypes = methodInfo.GetParameters().Select(p => p.ParameterType).ToArray();
+
+                // 返り値がvoidかどうか
+                var delegateType = methodInfo.ReturnType == typeof(void)
+                    ? Expression.GetActionType(argTypes)
+                    : Expression.GetFuncType(argTypes.Concat(new[] { methodInfo.ReturnType }).ToArray());
+
+                var delegateInstance = Delegate.CreateDelegate(delegateType, component, methodInfo);
+                var keyName = $"{Id}_{delegateInstance.Method.Name}";
+                _rpcList.Add(keyName);
+                MistManager.I.AddRPC(keyName, delegateInstance);
+            }
+        }
 
         /// <summary>
         /// 他のPeerからのpropertyの変更を受け取るための処理
@@ -150,32 +175,8 @@ namespace MistNet
                 var wrapperDelegate = Delegate.CreateDelegate(delegateType, wrapper.Target, wrapper.Method);
 
                 _rpcList.Add(keyName);
+                _propertyValueDict.Add(keyName, property.GetValue(component));
                 MistManager.I.AddRPC(keyName, wrapperDelegate);
-            }
-        }
-
-        /// <summary>
-        /// 他のPeerからのRPCを受け取るための処理
-        /// </summary>
-        /// <param name="methodsWithAttribute"></param>
-        /// <param name="component"></param>
-        private void RegisterRPCMethods(IEnumerable<MethodInfo> methodsWithAttribute, Component component)
-        {
-            foreach (var methodInfo in methodsWithAttribute)
-            {
-                MistDebug.Log($"Found method: {methodInfo.Name} in component: {component.GetType().Name}");
-                // 引数の種類に応じたDelegateを作成
-                var argTypes = methodInfo.GetParameters().Select(p => p.ParameterType).ToArray();
-
-                // 返り値がvoidかどうか
-                var delegateType = methodInfo.ReturnType == typeof(void)
-                    ? Expression.GetActionType(argTypes)
-                    : Expression.GetFuncType(argTypes.Concat(new[] { methodInfo.ReturnType }).ToArray());
-
-                var delegateInstance = Delegate.CreateDelegate(delegateType, component, methodInfo);
-                var keyName = $"{Id}_{delegateInstance.Method.Name}";
-                _rpcList.Add(keyName);
-                MistManager.I.AddRPC(keyName, delegateInstance);
             }
         }
 
@@ -188,16 +189,10 @@ namespace MistNet
                     // 保存されたプロパティ情報を使用して値を取得し、ログに出力
                     var value = property.GetValue(component);
                     var keyName = $"{Id}_{property.Name}";
-
-                    if (!_propertyValueDict.TryGetValue(keyName, out var previousValue))
-                    {
-                        if (value != null) _propertyValueDict.Add(keyName, value);
-                        continue;
-                    }
-
-                    if (previousValue.Equals(value)) continue;
-
+                    
+                    if (_propertyValueDict[keyName].Equals(value)) continue;
                     _propertyValueDict[keyName] = value;
+                    
                     MistDebug.Log($"Property: {property.Name}, Value: {value}");
                     MistManager.I.RPCAll(keyName, value);
                 }

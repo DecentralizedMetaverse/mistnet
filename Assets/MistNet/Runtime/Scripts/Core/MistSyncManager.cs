@@ -83,6 +83,7 @@ namespace MistNet
             }
             else
             {
+                // 自身以外のSyncObjectの登録
                 var sendData = new P_PropertyRequest();
                 var bytes = MemoryPackSerializer.Serialize(sendData);
                 MistManager.I.Send(MistNetMessageType.PropertyRequest, bytes, syncObject.OwnerId);
