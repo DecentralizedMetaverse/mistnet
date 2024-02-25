@@ -33,7 +33,7 @@ namespace MistNet
             _cancellationToken.Cancel();
         }
 
-        private void ReceivePing(byte[] data, string sourceId, string _)
+        private void ReceivePing(byte[] data, string sourceId)
         {
             var ping = MemoryPackSerializer.Deserialize<P_Ping>(data);
             var pong = new P_Pong
@@ -44,12 +44,12 @@ namespace MistNet
             MistManager.I.Send(MistNetMessageType.Pong, sendData ,sourceId);
         }
         
-        private void ReceivePong(byte[] data, string sourceId, string _)
+        private void ReceivePong(byte[] data, string sourceId)
         {
             var pong = MemoryPackSerializer.Deserialize<P_Pong>(data);
             var time = DateTime.Now.Ticks - pong.Time;
             var timeSpan = new TimeSpan(time);
-            Debug.Log($"[STATS][RTT][{sourceId}] {timeSpan.Milliseconds} ms");
+            MistDebug.Log($"[STATS][RTT][{sourceId}] {timeSpan.Milliseconds} ms");
         }
 
         private async UniTask UpdatePing(CancellationToken token = default)
@@ -73,17 +73,17 @@ namespace MistNet
             {
                 // 帯域幅(bps)を計算
                 var sendBps = TotalSendBytes * 8 / IntervalSendSizeTimeSec;
-                Debug.Log($"[STATS][Upload] {sendBps} bps");
+                MistDebug.Log($"[STATS][Upload] {sendBps} bps");
                 
                 var receiveBps = TotalReceiveBytes * 8 / IntervalSendSizeTimeSec;
-                Debug.Log($"[STATS][Download] {receiveBps} bps");
+                MistDebug.Log($"[STATS][Download] {receiveBps} bps");
                 
                 TotalSendBytes = 0;
                 TotalReceiveBytes = 0;
                 
                 // 現在の接続人数を調べる
                 var peers = MistPeerData.I.GetConnectedPeer;
-                Debug.Log($"[STATS][Peers] {peers.Count}/{MistConfig.LimitConnection}/{MistConfig.MaxConnection}");
+                MistDebug.Log($"[STATS][Peers] {peers.Count}/{MistConfig.LimitConnection}/{MistConfig.MaxConnection}");
                 
                 await UniTask.Delay(TimeSpan.FromSeconds(IntervalSendSizeTimeSec), cancellationToken: token);
             }

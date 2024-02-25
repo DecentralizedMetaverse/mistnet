@@ -1,3 +1,4 @@
+using MemoryPack;
 using UnityEngine;
 
 namespace MistNet
@@ -5,9 +6,11 @@ namespace MistNet
     [RequireComponent(typeof(MistSyncObject))]
     public class MistTransform : MonoBehaviour
     {
+        [Tooltip("Note: This setting is applicable to all synchronized objects, excluding a player object")]
+        [SerializeField] private float _syncIntervalTimeSecond = 0.1f;
+        
         private MistSyncObject _syncObject;
         private float _time;
-        private float _syncIntervalTimeSecond = 0.1f;
         private P_Location _sendData;
         private Vector3 _previousPosition;
         private Quaternion _previousRotation;
@@ -44,18 +47,6 @@ namespace MistNet
             }
         }
 
-        public void ReceiveLocation(P_Location location)
-        {
-            if (_syncObject == null) return;
-            if (_syncObject.IsOwner) return;
-
-            _receivedPosition = location.Position;
-            _receivedRotation = Quaternion.Euler(location.Rotation);
-            _syncIntervalTimeSecond = location.Time;
-            Debug.Log($"[{location.ObjId}] Time: {_syncIntervalTimeSecond}");
-            _elapsedTime = 0f;
-        }
-
         private void UpdateAndSendLocation()
         {
             _time += Time.deltaTime;
@@ -73,19 +64,41 @@ namespace MistNet
             _sendData.Position = transform.position;
             _sendData.Rotation = transform.rotation.eulerAngles;
             
-            // var bytes = MemoryPackSerializer.Serialize(_sendData);
-            // MistManager.I.SendAll(MistNetMessageType.Location, bytes);
-            MistSendingOptimizer.I.SendLocationData = _sendData;
+            if (_syncObject.IsPlayerObject)
+            {
+                MistSendingOptimizer.I.SendLocationData = _sendData;
+                return;
+            }
+            
+            _sendData.Time = _syncIntervalTimeSecond;
+            var bytes = MemoryPackSerializer.Serialize(_sendData);
+            MistManager.I.SendAll(MistNetMessageType.Location, bytes);
+        }
+        
+        public void ReceiveLocation(P_Location location)
+        {
+            if (_syncObject == null) return;
+            if (_syncObject.IsOwner) return;
+
+            _receivedPosition = location.Position;
+            _receivedRotation = Quaternion.Euler(location.Rotation);
+            _syncIntervalTimeSecond = location.Time;
+            MistDebug.Log($"[{location.ObjId}] Time: {_syncIntervalTimeSecond}");
+            _elapsedTime = 0f;
         }
 
         private void InterpolationLocation()
         {
             if (_syncIntervalTimeSecond == 0) return;
             
-            var time = _elapsedTime / _syncIntervalTimeSecond;
+            // var timeRatio = _elapsedTime / _syncIntervalTimeSecond;
+            var timeRatio = Mathf.Clamp01(_elapsedTime / _syncIntervalTimeSecond);
             _elapsedTime += Time.deltaTime;
-            transform.position = Vector3.Lerp(transform.position, _receivedPosition, time);
-            transform.rotation = Quaternion.Lerp(transform.rotation, _receivedRotation, time);
+            
+            transform.position = Vector3.Lerp(transform.position, _receivedPosition, timeRatio);
+            transform.rotation = Quaternion.Slerp(transform.rotation, _receivedRotation, timeRatio);
+            
+            if (_elapsedTime >= _syncIntervalTimeSecond) _elapsedTime = 0f;
         }
     }
 }

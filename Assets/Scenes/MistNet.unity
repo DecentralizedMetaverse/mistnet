@@ -200,7 +200,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   prefabAddress: MistPlayerTest
-  randomSpawn: 1
+  randomSpawn: 0
 --- !u!4 &994400528
 Transform:
   m_ObjectHideFlags: 0
@@ -784,6 +784,16 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2003660962140733667, guid: 701c67af5a70dfc45bd6ed39e5d18584,
+        type: 3}
+      propertyPath: ShowLog
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2003660962140733667, guid: 701c67af5a70dfc45bd6ed39e5d18584,
+        type: 3}
+      propertyPath: showLog
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2003660962140733667, guid: 701c67af5a70dfc45bd6ed39e5d18584,
         type: 3}
       propertyPath: MistPeerData

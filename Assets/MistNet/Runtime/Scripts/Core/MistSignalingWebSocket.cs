@@ -56,13 +56,13 @@ namespace MistNet
         private void ConnectToSignalingServer()
         {
             _ws = new WebSocket(MistConfig.SignalingServerAddress);
-            _ws.OnOpen += (sender, e) => { Debug.Log("[WebSocket] Connected"); };
-            _ws.OnClose += (sender, e) => { Debug.Log("[WebSocket] Closed"); };
+            _ws.OnOpen += (sender, e) => { MistDebug.Log("[WebSocket] Connected"); };
+            _ws.OnClose += (sender, e) => { MistDebug.Log("[WebSocket] Closed"); };
             _ws.OnMessage += (sender, e) =>
             {
                 _messageQueue.Enqueue(e.Data);
             };
-            _ws.OnError += (sender, e) => { Debug.LogError($"[WebSocket] Error {e.Message}"); };
+            _ws.OnError += (sender, e) => { MistDebug.LogError($"[WebSocket] Error {e.Message}"); };
             _ws.Connect();
         }
 

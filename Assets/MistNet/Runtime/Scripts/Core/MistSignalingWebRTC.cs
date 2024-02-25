@@ -44,18 +44,18 @@ namespace MistNet
             var data = MemoryPackSerializer.Serialize(message);
             MistManager.I.Send(MistNetMessageType.Signaling, data, targetId);
             var type = sendData["type"].ToString();
-            Debug.Log($"[SEND][Signaling][{type}] -> {targetId}");
+            MistDebug.Log($"[SEND][Signaling][{type}] -> {targetId}");
         }
 
         /// <summary>
         /// 受信
         /// </summary>
-        private void ReceiveSignalingMessage(byte[] bytes, string sourceId, string _)
+        private void ReceiveSignalingMessage(byte[] bytes, string sourceId)
         {
             var receiveData = MemoryPackSerializer.Deserialize<P_Signaling>(bytes);
             var response = JsonConvert.DeserializeObject<Dictionary<string, object>>(receiveData.Data);
             var type = response["type"].ToString();
-            Debug.Log($"[RECV][Signaling][{type}] {sourceId} ->");
+            MistDebug.Log($"[RECV][Signaling][{type}] {sourceId} ->");
             _functions[type](response);
         }
 

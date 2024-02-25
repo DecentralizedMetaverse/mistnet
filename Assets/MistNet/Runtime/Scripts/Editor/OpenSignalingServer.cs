@@ -9,13 +9,13 @@ namespace MistNet.Editor
         private static readonly string ParentDirectory = "MistNet";
         private static readonly string ServerFileName = "main.py";
             
-        [MenuItem("Tools/Open SignalingServer")]
+        [MenuItem("Tools/MistNet/Open SignalingServer")]
         private static void Execute()
         {
             Process.Start("code", $"{Application.dataPath}/../{ParentDirectory}");
         }
 
-        [MenuItem("Tools/Run SignalingServer")]
+        [MenuItem("Tools/MistNet/Run SignalingServer")]
         private static void RunServer()
         {
             string serverPath = $"{Application.dataPath}/../{ParentDirectory}/";

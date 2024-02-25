@@ -10,9 +10,9 @@ namespace MistNet
     {
         private static readonly string LogFilePath = $"{Application.dataPath}/../MistNetLog.log";
         
-        [SerializeField] int maxLogLines = 10;
+        [SerializeField] private int maxLogLines = 10;
         [SerializeField] private string filters = "";
-        [SerializeField] TMP_Text text;
+        [SerializeField] private TMP_Text text;
 
         private string _log = "";
         private string _logAll = "";

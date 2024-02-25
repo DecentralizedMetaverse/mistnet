@@ -24,14 +24,14 @@ namespace MistNet
             _webSocketServer = new WebSocketServer(Port);
             _webSocketServer.AddWebSocketService<MistWebSocketBehavior>("/ws");
             _webSocketServer.Start();
-            Debug.Log($"[MistSignalingServer] Start {Port}");
+            MistDebug.Log($"[MistSignalingServer] Start {Port}");
         }
 
         private void OnDestroy()
         {
             if (_webSocketServer == null) return;
             _webSocketServer.Stop();
-            Debug.Log($"[MistSignalingServer] Stop {Port}");
+            MistDebug.Log($"[MistSignalingServer] Stop {Port}");
         }
 
         private class MistWebSocketBehavior : WebSocketBehavior
@@ -41,13 +41,13 @@ namespace MistNet
 
             protected override void OnOpen()
             {
-                Debug.Log($"[SERVER][OPEN] {ID}");
+                MistDebug.Log($"[SERVER][OPEN] {ID}");
                 signalingRequestIds.Enqueue(ID);
             }
 
             protected override void OnClose(CloseEventArgs e)
             {
-                Debug.Log($"[SERVER][CLOSE] {ID}");
+                MistDebug.Log($"[SERVER][CLOSE] {ID}");
                 sessionIdToClientId.Remove(ID);
 
                 var newList = signalingRequestIds.Where(x => x != ID).ToList();
@@ -56,7 +56,7 @@ namespace MistNet
 
             protected override void OnMessage(MessageEventArgs e)
             {
-                Debug.Log($"[SERVER][RECV] {e.Data}");
+                MistDebug.Log($"[SERVER][RECV] {e.Data}");
 
                 var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(e.Data);
                 var messageType = data["type"].ToString();

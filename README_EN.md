@@ -92,7 +92,7 @@ you need to instantiate them through MistNet.
 
 ```csharp
 [SerializeField] 
-private string prefabAddress = "Assets/Prefab/MistNet/MistPlayerTest.prefab";
+string prefabAddress = "Assets/Prefab/MistNet/MistPlayerTest.prefab";
 
 MistManager.I.InstantiateAsync(prefabAddress, position, Quaternion.identity).Forget();
 ```
@@ -102,16 +102,38 @@ MistManager.I.InstantiateAsync(prefabAddress, position, Quaternion.identity).For
 Prepend `[MistRpc]` to the method.
 ```csharp
 [MistRpc]
-private void RPC_○○ () {}
+void RPC_○○ () {}
 ```
 
 ## Invocation Method
 ```csharp
-[SerializeField] private MistSyncObject syncObject;
+[SerializeField] MistSyncObject syncObject;
+
+// Method to send to everyone including oneself
+syncObject.RPCAllWithSelf(nameof(RPC_○○), args);
 
 // Method to send to all connected Peers
 syncObject.RPCAll(nameof(RPC_○○), args);
 
 // Method to execute by specifying the recipient's ID
 syncObject.RPC(id, nameof(RPC_○○), args);
+```
+
+# Variable Synchronization
+
+By adding `[MistSync]`, it is possible to synchronize variables.
+
+```csharp
+[MistSync]
+int hp { get; set; }
+```
+
+Synchronization occurs automatically when a user joins for the first time and when the value changes.
+
+Furthermore, it is possible to execute a specific method at the time of synchronization.
+
+```csharp
+[MistSync(OnChanged = nameof(OnChanged))]
+int hp { get; set; }
+void OnChanged();    
 ```

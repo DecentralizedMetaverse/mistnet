@@ -101,16 +101,37 @@ MistManager.I.InstantiateAsync(prefabAddress, position, Quaternion.identity).For
 在方法前加上`[MistRpc]`。
 ```csharp
 [MistRpc]
-private void RPC_○○ () {}
+void RPC_○○ () {}
 ```
 
 ## 調用方法
 ```csharp
-[SerializeField] private MistSyncObject syncObject;
+[SerializeField] MistSyncObject syncObject;
+
+// 發送給包括自己在內的所有人的方法
+syncObject.RPCAllWithSelf(nameof(RPC_○○), args);
 
 // 向所有連接的Peer發送的方法
 syncObject.RPCAll(nameof(RPC_○○), args);
 
 // 指定接收者ID並執行的方法
 syncObject.RPC(id, nameof(RPC_○○), args);
+```
+
+# 變數同步
+
+通過添加 `[MistSync]`，可以實現變量同步。
+
+ 
+```csharp
+[MistSync]
+int hp { get; set; }
+```
+當用戶首次加入以及值發生變化時，將自動進行同步。
+
+此外，在同步時可以執行特定的方法。
+```csharp
+[MistSync(OnChanged = nameof(OnChanged))]
+int hp { get; set; }
+void OnChanged();    
 ```

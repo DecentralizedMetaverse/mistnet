@@ -16,42 +16,9 @@ namespace MistNet
         public static MistSendingOptimizer I;
         public P_Location SendLocationData;
 
-        private readonly Dictionary<int, SendTarget> _sendTargets = new()
-        {
-            { 3, new() { WaitTimeSec = 0.1f, } },
-            { 6, new() { WaitTimeSec = 0.25f, } },
-            { 12, new() { WaitTimeSec = 0.5f, } },
-            { 24, new() { WaitTimeSec = 0.75f, } },
-            { 48, new() { WaitTimeSec = 1.0f, } },
-            { 96, new() { WaitTimeSec = 2.0f, } },
-        };
+        private readonly Dictionary<int, SendTarget> _radiusAndSendInterval = new();
 
         private readonly Dictionary<string, int> _idAndDistanceDict = new();
-
-        public void SetCategory(string id, int distance)
-        {
-            if (_idAndDistanceDict.TryGetValue(id, out var previousDistance))
-            {
-                _sendTargets[previousDistance].Ids.Remove(id);
-            }
-
-            _idAndDistanceDict[id] = distance;
-            _sendTargets[distance].Ids.Add(id);
-        }
-        
-        public void RemoveCategory(string id)
-        {
-            if (_idAndDistanceDict.TryGetValue(id, out var previousDistance))
-            {
-                _sendTargets[previousDistance].Ids.Remove(id);
-            }
-        }
-
-        private class SendTarget
-        {
-            public float WaitTimeSec;
-            public HashSet<string> Ids = new();
-        }
         
         private void Awake()
         {
@@ -60,10 +27,40 @@ namespace MistNet
 
         private void Start()
         {
-            foreach (var distance in _sendTargets.Keys)
+            foreach (var kvp in MistConfig.RadiusAndSendIntervalSeconds)
+            {
+                _radiusAndSendInterval.Add(kvp.Key, new SendTarget { WaitTimeSec = kvp.Value });
+            }
+            
+            foreach (var distance in _radiusAndSendInterval.Keys)
             {
                 SendLocationWithDelay(distance).Forget();
             }
+        }
+
+        public void SetCategory(string id, int distance)
+        {
+            if (_idAndDistanceDict.TryGetValue(id, out var previousDistance))
+            {
+                _radiusAndSendInterval[previousDistance].Ids.Remove(id);
+            }
+
+            _idAndDistanceDict[id] = distance;
+            _radiusAndSendInterval[distance].Ids.Add(id);
+        }
+        
+        public void RemoveCategory(string id)
+        {
+            if (_idAndDistanceDict.TryGetValue(id, out var previousDistance))
+            {
+                _radiusAndSendInterval[previousDistance].Ids.Remove(id);
+            }
+        }
+
+        private class SendTarget
+        {
+            public float WaitTimeSec;
+            public HashSet<string> Ids = new();
         }
 
         /// <summary>
@@ -73,10 +70,10 @@ namespace MistNet
         /// <param name="token"></param>
         private async UniTask SendLocationWithDelay(int intervalDistance, CancellationToken token = default)
         {
-            var waitTimeSec = _sendTargets[intervalDistance].WaitTimeSec;
+            var waitTimeSec = _radiusAndSendInterval[intervalDistance].WaitTimeSec;
             while (!token.IsCancellationRequested)
             {
-                SendLocation(_sendTargets[intervalDistance]);
+                SendLocation(_radiusAndSendInterval[intervalDistance]);
                 await UniTask.Delay(TimeSpan.FromSeconds(waitTimeSec), cancellationToken: token);
             }
         }
@@ -84,6 +81,7 @@ namespace MistNet
         private void SendLocation(SendTarget target)
         {
             if (SendLocationData == null) return;
+            
             SendLocationData.Time = target.WaitTimeSec;
             var bytes = MemoryPackSerializer.Serialize(SendLocationData);
             foreach (var id in target.Ids)

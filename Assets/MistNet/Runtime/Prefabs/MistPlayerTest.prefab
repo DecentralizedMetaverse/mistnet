@@ -33,7 +33,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 10, y: 10, z: 10}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2818148482520206404}
@@ -64,6 +64,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab62af81ea3086a42a67d6c27ea73823, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _syncIntervalTimeSecond: 0.1
 --- !u!114 &1559557820499594004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -71,7 +72,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6339836550088581722}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 87f13ee342d98664dbee1f89e241c478, type: 3}
   m_Name: 
@@ -138,9 +139,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f3fe93f9c8b9394189d9177b459b4fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  syncObject: {fileID: 1998646823194181299}
   animator: {fileID: 5006252636332143779}
   mistAnimator: {fileID: 7925850346789279883}
+  mao: 0
 --- !u!1 &8782782535456946550
 GameObject:
   m_ObjectHideFlags: 0
@@ -170,7 +171,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 10, y: 10, z: 10}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 418250959410926740}
