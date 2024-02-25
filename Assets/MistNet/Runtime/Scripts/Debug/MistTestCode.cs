@@ -42,7 +42,7 @@ public class MistTestCode : MistBehaviour
         else _speed -= Time.deltaTime;
         
         animator.SetFloat(Speed, _speed);
-        _userName = $"aaa{_speed}";
+        _userName = $"{_speed}";
     }
 
     [MistRpc]

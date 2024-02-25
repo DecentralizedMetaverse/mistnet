@@ -11,14 +11,13 @@ namespace MistNet
 {
     public class MistSyncObject : MonoBehaviour
     {
-        private const float WaitTimeSec = 0.5f;
-
         public string Id { get; private set; }
         public string PrefabAddress { get; private set; }
         public string OwnerId { get; private set; }
         public bool IsOwner { get; private set; } = true;
         public bool IsPlayerObject { get; set; }
         [HideInInspector] public MistTransform MistTransform;
+        [SerializeField] private float syncIntervalSeconds = 0.5f;
 
         private readonly List<string> _rpcList = new();
         private readonly List<(Component, PropertyInfo)> _propertyList = new();
@@ -78,7 +77,7 @@ namespace MistNet
             var keyName = $"{Id}_{key}";
             MistManager.I.RPCAllWithSelf(keyName, args);
         }
-        
+
         public void SendAllProperties(string id)
         {
             foreach (var (component, property) in _propertyList)
@@ -111,7 +110,7 @@ namespace MistNet
                 RegisterSyncProperties(propertyInfos, component);
             }
         }
-        
+
         /// <summary>
         /// 他のPeerからのRPCを受け取るための処理
         /// </summary>
@@ -133,7 +132,9 @@ namespace MistNet
                 var delegateInstance = Delegate.CreateDelegate(delegateType, component, methodInfo);
                 var keyName = $"{Id}_{delegateInstance.Method.Name}";
                 _rpcList.Add(keyName);
-                MistManager.I.AddRPC(keyName, delegateInstance);
+                
+                var argTypesWithoutMessageInfo = argTypes.Where(t => t != typeof(MessageInfo)).ToArray();
+                MistManager.I.AddRPC(keyName, delegateInstance, argTypesWithoutMessageInfo);
             }
         }
 
@@ -163,8 +164,8 @@ namespace MistNet
                 }
 
                 var originalSetMethod = property.SetMethod;
-
                 // Wrapperを作成
+                // Action property.PropertyTypeの型を引数に取るActionを作成
                 Action<object> wrapper = value =>
                 {
                     originalSetMethod.Invoke(component, new[] { value });
@@ -176,7 +177,7 @@ namespace MistNet
 
                 _rpcList.Add(keyName);
                 _propertyValueDict.Add(keyName, property.GetValue(component));
-                MistManager.I.AddRPC(keyName, wrapperDelegate);
+                MistManager.I.AddRPC(keyName, wrapperDelegate, new[] { property.PropertyType });
             }
         }
 
@@ -189,15 +190,18 @@ namespace MistNet
                     // 保存されたプロパティ情報を使用して値を取得し、ログに出力
                     var value = property.GetValue(component);
                     var keyName = $"{Id}_{property.Name}";
-                    
-                    if (_propertyValueDict[keyName].Equals(value)) continue;
+
+                    var propertyValue = _propertyValueDict[keyName];
+                    if (propertyValue == null) continue;
+                    if (propertyValue.Equals(value)) continue;
+
                     _propertyValueDict[keyName] = value;
-                    
+
                     MistDebug.Log($"Property: {property.Name}, Value: {value}");
                     MistManager.I.RPCAll(keyName, value);
                 }
 
-                await UniTask.Delay(TimeSpan.FromSeconds(WaitTimeSec), cancellationToken: token);
+                await UniTask.Delay(TimeSpan.FromSeconds(syncIntervalSeconds), cancellationToken: token);
             }
         }
     }

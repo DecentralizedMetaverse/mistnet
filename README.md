@@ -30,7 +30,7 @@ https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask
 ```
 - MistNet
 ```
-git@github.com:DecentralizedMetaverse/mistnet.git?path=/Assets/MistNet
+https://github.com/DecentralizedMetaverse/mistnet.git?path=/Assets/MistNet
 ```
 
 # Signaling Server
@@ -102,7 +102,7 @@ MistNetを経由してInstantiateする必要があります。
 
 ```csharp
 [SerializeField] 
-private string prefabAddress = "Assets/Prefab/MistNet/MistPlayerTest.prefab";
+string prefabAddress = "Assets/Prefab/MistNet/MistPlayerTest.prefab";
 
 MistManager.I.InstantiateAsync(prefabAddress, position, Quaternion.identity).Forget();
 ```
@@ -112,16 +112,37 @@ MistManager.I.InstantiateAsync(prefabAddress, position, Quaternion.identity).For
 `[MistRpc]`をメソッドの前につけます。
 ```csharp
 [MistRpc]
-private void RPC_○○ () {}
+void RPC_○○ () {}
 ```
 
 ## 呼び出し方法
 ```csharp
-[SerializeField] private MistSyncObject syncObject;
+[SerializeField] MistSyncObject syncObject;
+
+// 自身を含めた全員に送信する方法
+syncObject.RPCAllWithSelf(nameof(RPC_○○), args);
 
 // 接続しているPeer全員に送信する方法
 syncObject.RPCAll(nameof(RPC_○○), args);
 
 // 送信先のIDを指定して実行する方法
 syncObject.RPC(id, nameof(RPC_○○), args);
+
+```
+
+# 変数の同期
+
+`[MistSync]`をつけることで、変数の同期が可能です。
+
+```csharp
+[MistSync]
+int hp { get; set; }
+```
+同期のタイミングは、ユーザーが新しく参加した時と、値が変更時に自動的に行われます。
+
+また、同期時に、任意のメソッドを実行することも可能です。
+```csharp
+[MistSync(OnChanged = nameof(OnChanged))]
+int hp { get; set; }
+void OnChanged();    
 ```

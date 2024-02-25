@@ -1,7 +1,7 @@
 ﻿using MemoryPack;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
+using System.ComponentModel;
 using System.Reflection;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -16,19 +16,20 @@ namespace MistNet
     public class MistManager : MonoBehaviour
     {
         private static readonly float WaitConnectingTimeSec = 3f;
-        
+
         [SerializeField] private bool showLog = false;
-        
+
         public static MistManager I;
         public MistPeerData MistPeerData;
         public Action<string> ConnectAction;
 
         private readonly MistRoutingTable _routingTable = new();
         private readonly MistConfig _config = new();
-        private readonly Dictionary<MistNetMessageType, Action<byte[], string>> _onMessageDict = new(); 
-        private readonly Dictionary<string, Delegate> _functions = new();
-        private readonly Dictionary<string, int> _functionArgsLength = new();
-        
+        private readonly Dictionary<MistNetMessageType, Action<byte[], string>> _onMessageDict = new();
+        private readonly Dictionary<string, Delegate> _functionDict = new();
+        private readonly Dictionary<string, int> _functionArgsLengthDict = new();
+        private readonly Dictionary<string, Type[]> _functionArgsTypeDict = new();
+
         private void OnValidate()
         {
             MistDebug.ShowLog = showLog;
@@ -52,7 +53,7 @@ namespace MistNet
             MistPeerData.AllForceClose();
             _config.WriteConfig();
         }
-        
+
         public void Send(MistNetMessageType type, byte[] data, string targetId)
         {
             MistDebug.Log($"[SEND][{type.ToString()}] -> {targetId}");
@@ -107,16 +108,19 @@ namespace MistNet
             _onMessageDict.Add(messageType, function);
         }
 
-        public void AddRPC(string key, Delegate function)
+        public void AddRPC(string key, Delegate function, Type[] types)
         {
-            _functions.Add(key, function);
-            _functionArgsLength.Add(key, function.GetMethodInfo().GetParameters().Length);
+            _functionDict.Add(key, function);
+            var parameters = function.GetMethodInfo().GetParameters();
+            _functionArgsLengthDict.Add(key, parameters.Length);
+            _functionArgsTypeDict.Add(key, types);
         }
-        
+
         public void RemoveRPC(string key)
         {
-            _functions.Remove(key);
-            _functionArgsLength.Remove(key);
+            _functionDict.Remove(key);
+            _functionArgsLengthDict.Remove(key);
+            _functionArgsTypeDict.Remove(key);
         }
 
         public void RPC(string targetId, string key, params object[] args)
@@ -130,7 +134,7 @@ namespace MistNet
             var bytes = MemoryPackSerializer.Serialize(sendData);
             Send(MistNetMessageType.RPC, bytes, targetId);
         }
-        
+
         public void RPCAll(string key, params object[] args)
         {
             var argsString = string.Join(",", args);
@@ -146,15 +150,15 @@ namespace MistNet
         public void RPCAllWithSelf(string key, params object[] args)
         {
             RPCAll(key, args);
-            _functions[key].DynamicInvoke(args);
+            _functionDict[key].DynamicInvoke(args);
         }
 
         private void OnRPC(byte[] data, string sourceId)
         {
             var message = MemoryPackSerializer.Deserialize<P_RPC>(data);
-            var args = ConvertStringToObjects(message.Args);
-            var argsLength = _functionArgsLength[message.Method];
-            
+            var args = ConvertStringToObjects(message.Method, message.Args);
+            var argsLength = _functionArgsLengthDict[message.Method];
+
             if (args.Count != argsLength)
             {
                 args.Add(new MessageInfo
@@ -163,28 +167,22 @@ namespace MistNet
                 });
             }
 
-            _functions[message.Method].DynamicInvoke(args.ToArray());
+            _functionDict[message.Method].DynamicInvoke(args.ToArray());
         }
 
-        private List<object> ConvertStringToObjects(string input)
+        private List<object> ConvertStringToObjects(string key, string input)
         {
-            var objects = new List<object>();
+            var types = _functionArgsTypeDict[key];
+            var objects = new List<object>(types.Length);
             var parts = input.Split(',');
 
-            foreach (var part in parts)
+            // typesを使って、partsを変換する
+            for (var i = 0; i < types.Length; i++)
             {
-                if (int.TryParse(part, out var intValue))
-                {
-                    objects.Add(intValue);
-                }
-                else if (float.TryParse(part, NumberStyles.Float, CultureInfo.InvariantCulture, out var floatValue))
-                {
-                    objects.Add(floatValue);
-                }
-                else
-                {
-                    objects.Add(part);
-                }
+                var type = types[i];
+                var converter = TypeDescriptor.GetConverter(type);
+                var obj = converter.ConvertFromString(parts[i]);
+                objects.Add(obj);
             }
 
             return objects;
