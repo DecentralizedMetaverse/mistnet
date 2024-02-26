@@ -860,6 +860,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: MistNet
       objectReference: {fileID: 0}
+    - target: {fileID: 8750905894533009966, guid: 701c67af5a70dfc45bd6ed39e5d18584,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 7935780440447089082, guid: 701c67af5a70dfc45bd6ed39e5d18584, type: 3}
     m_RemovedGameObjects: []

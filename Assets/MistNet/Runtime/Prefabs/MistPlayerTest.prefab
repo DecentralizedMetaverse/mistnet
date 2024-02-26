@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 7925850346789279883}
   - component: {fileID: 5006252636332143779}
   - component: {fileID: 4555866850124383595}
+  - component: {fileID: 3722471006174357160}
   m_Layer: 0
   m_Name: MistPlayerTest
   m_TagString: Untagged
@@ -52,6 +53,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   MistTransform: {fileID: 0}
+  syncIntervalSeconds: 0.5
 --- !u!114 &4381840333400488554
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -98,7 +100,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6339836550088581722}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b95132c5a4b35f24e81c8747af1284a0, type: 3}
   m_Name: 
@@ -114,7 +116,7 @@ Animator:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6339836550088581722}
-  m_Enabled: 1
+  m_Enabled: 0
   m_Avatar: {fileID: 0}
   m_Controller: {fileID: 9100000, guid: e048ee5ab0d6cf144b0187e30a3fa1a5, type: 2}
   m_CullingMode: 0
@@ -142,6 +144,18 @@ MonoBehaviour:
   animator: {fileID: 5006252636332143779}
   mistAnimator: {fileID: 7925850346789279883}
   mao: 0
+--- !u!114 &3722471006174357160
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6339836550088581722}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82916d69d4f9fea4886b8939b4b75eb3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &8782782535456946550
 GameObject:
   m_ObjectHideFlags: 0

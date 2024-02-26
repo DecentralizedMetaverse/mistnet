@@ -17,11 +17,14 @@ namespace MistNet
     {
         private static readonly float WaitConnectingTimeSec = 3f;
 
-        [SerializeField] private bool showLog = false;
+        [SerializeField] private bool showLog;
 
         public static MistManager I;
         public MistPeerData MistPeerData;
         public Action<string> ConnectAction;
+        public Action<string> OnConnectedAction;
+        public Action<string> OnDisconnectedAction;
+        
 
         private readonly MistRoutingTable _routingTable = new();
         private readonly MistConfig _config = new();
@@ -248,7 +251,8 @@ namespace MistNet
             // InstantiateしたObject情報の送信
             MistPeerData.I.GetPeerData(id).State = MistPeerState.Connected;
             MistSyncManager.I.SendObjectInstantiateInfo(id);
-            MistOptimizationManager.I.OnConnected(id);
+            MistOptimizationManager.I?.OnConnected(id);
+            OnConnectedAction?.Invoke(id);
         }
 
         public void OnDisconnected(string id)
@@ -256,10 +260,11 @@ namespace MistNet
             MistDebug.Log($"[Disconnected] {id}");
             // MistPeerData.Dict.Remove(id);
             MistSyncManager.I.DestroyBySenderId(id);
-            MistOptimizationManager.I.OnDisconnected(id);
+            MistOptimizationManager.I?.OnDisconnected(id);
 
             MistPeerData.I.GetPeerData(id).State = MistPeerState.Disconnected;
             MistPeerData.I.GetAllPeer.Remove(id);
+            OnDisconnectedAction?.Invoke(id);
         }
 
         public void Disconnect(string id)
@@ -267,6 +272,16 @@ namespace MistNet
             var peer = MistPeerData.GetPeer(id);
             peer.Close();
             OnDisconnected(id);
+        }
+        
+        public void AddJoinedCallback(Delegate callback)
+        {
+            OnConnectedAction += (Action<string>)callback;
+        }
+        
+        public void AddLeftCallback(Delegate callback)
+        {
+            OnDisconnectedAction += (Action<string>)callback;
         }
 
         /// <summary>
