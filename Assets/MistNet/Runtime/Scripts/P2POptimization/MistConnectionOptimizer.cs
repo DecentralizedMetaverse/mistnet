@@ -5,6 +5,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using MemoryPack;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace MistNet
 {
@@ -15,12 +16,16 @@ namespace MistNet
     /// </summary>
     public class MistConnectionOptimizer : MonoBehaviour
     {
-        private static readonly float IntervalSendTableTimeSec = 5f;
+        private static readonly float IntervalSendTableTimeSec = 1.0f;
         private static readonly float RemoveDisconnectTimeSec = 10f; // 切断要求を受け取ってから切断をキャンセルするまでの時間
-
+        private static readonly float BlockConnectIntervalTimeSec = 3f; // 一定時間接続をブロックする
+        
         public static MistConnectionOptimizer I { get; private set; }
-        private Chunk _currentChunk;
         private IEnumerable<ConnectionElement> _sortedPeerList;
+        private CancellationTokenSource _cancelTokenSource;
+
+        private float _leaderTimeMax;
+        private float _leaderTime;
 
         private class ConnectionElement
         {
@@ -35,11 +40,40 @@ namespace MistNet
 
         private void Start()
         {
+            _leaderTimeMax = Random.Range(2.0f, 4.0f);
+            _leaderTime = _leaderTimeMax;
+            
             MistManager.I.AddRPC(MistNetMessageType.DisconnectRequest, OnDisconnectRequest);
             MistManager.I.AddRPC(MistNetMessageType.DisconnectResponse, OnDisconnectResponse);
             MistManager.I.AddRPC(MistNetMessageType.PeerData, OnPeerTableResponse);
+            MistManager.I.AddRPC(MistNetMessageType.LeaderNotify, (_,_) => _leaderTime = _leaderTimeMax);
+            
+            _cancelTokenSource = new();
+            SendPeerTableWithDelay(_cancelTokenSource.Token).Forget();
+            UpdateRoutingTable(_cancelTokenSource.Token).Forget();
+            UpdateLeaderTime(_cancelTokenSource.Token).Forget();
+        }
 
-            SendPeerTableWithDelay().Forget();
+        private async UniTaskVoid UpdateLeaderTime(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await UniTask.Yield();
+                _leaderTime -= Time.deltaTime;
+                if (_leaderTime < 0) _leaderTime = 0;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            _cancelTokenSource.Cancel();
+        }
+        
+        public void OnDisconnected(string id)
+        {
+            var peerData = MistPeerData.I.GetPeerData(id);
+            peerData.State = MistPeerState.Disconnected;
+            peerData.BlockConnectIntervalTime = BlockConnectIntervalTimeSec;
         }
 
         private void OnPeerTableResponse(byte[] data, string sourceId)
@@ -55,7 +89,6 @@ namespace MistNet
             MistPeerData.I.UpdatePeerData(message.Id, message);
 
             OptimizeHandler();
-            ShowRoutingTable();
         }
 
         /// <summary>
@@ -63,7 +96,11 @@ namespace MistNet
         /// </summary>
         private void OptimizeHandler()
         {
-            var selfPosition = MistSyncManager.I.SelfSyncObject.transform.position;
+            if (_leaderTime > 0) return;
+            
+            var selfSyncObject = MistSyncManager.I.SelfSyncObject;
+            if (selfSyncObject == null) return;
+            var selfPosition = selfSyncObject.transform.position;
 
             // 距離を計算し、Peerリストを取得
             var allPeerList = GetPeerListCalcDistance(selfPosition);
@@ -74,7 +111,7 @@ namespace MistNet
             MistDebug.Log("[Debug] ソート完了");
             
             var debugText = "[SortedTable]\n";
-            int peerCount = 0;
+            var peerCount = 0;
             foreach (var element in _sortedPeerList)
             {
                 var id = element.Id;
@@ -83,36 +120,50 @@ namespace MistNet
                 var peerData = MistPeerData.I.GetPeerData(id);
                 debugText += $"{id} {peerData.State} {peerData.CurrentConnectNum} {peerData.MaxConnectNum} {element.Distance}\n";
 
-                if (peerCount <= MistConfig.LimitConnection)
+                // if (peerCount <= MistConfig.LimitConnection)
                 {
-                    if (peerData.State == MistPeerState.Disconnected &&
-                        peerData.CurrentConnectNum < peerData.MaxConnectNum)
+                    if (peerData.State == MistPeerState.Disconnected) 
+                        // &&
+                        // peerData.CurrentConnectNum < peerData.MaxConnectNum)
+                        // &&peerData.BlockConnectIntervalTime == 0)
                     {
                         SendConnectRequest(id);
                         MistDebug.Log("[Debug] SendConnectRequest");
+                        SendLeaderNotify();
                     }
                 }
-                else if (peerData.State == MistPeerState.Connected)
-                {
-                    SendDisconnectRequest(id);
-                    MistDebug.Log("[Debug] SendDisconnectRequest");
-                } 
+                // if (peerData.State == MistPeerState.Connected && peerData.CurrentConnectNum > peerData.MinConnectNum)
+                // {
+                //     SendDisconnectRequest(id);
+                //     MistDebug.Log("[Debug] SendDisconnectRequest");
+                //     SendLeaderNotify();
+                // } 
 
                 peerCount++;
             }
             MistDebug.Log(debugText);
         }
 
-        private void ShowRoutingTable()
+        private async UniTaskVoid UpdateRoutingTable(CancellationToken token)
         {
-            var text = "[RoutingTable]\n";
-            var table = MistPeerData.I.GetAllPeer;
-            foreach (var kv in table)
+            while (!token.IsCancellationRequested)
             {
-                text += $"{kv.Key} {kv.Value.CurrentConnectNum} {kv.Value.MaxConnectNum} {kv.Value.State}\n";
-            }
+                await UniTask.Delay(TimeSpan.FromSeconds(1.0f), cancellationToken: token);
+                SendPeerData().Forget();
 
-            MistDebug.Log(text);
+                var text = "[RoutingTable]\n";
+                var table = MistPeerData.I.GetAllPeer;
+                foreach (var kv in table)
+                {
+                    text += $"{kv.Key} {kv.Value.CurrentConnectNum} {kv.Value.MaxConnectNum} {kv.Value.State}\n";
+                    kv.Value.BlockConnectIntervalTime--;
+                    if (kv.Value.BlockConnectIntervalTime < 0)
+                    {
+                        kv.Value.BlockConnectIntervalTime = 0;
+                    }
+                }
+                MistDebug.Log(text);
+            }
         }
 
         /// <summary>
@@ -145,11 +196,16 @@ namespace MistNet
 
         private void SendDisconnectRequest(string id)
         {
-            AddDisconnectListAndDelayCancel(id).Forget();
+            // AddDisconnectListAndDelayCancel(id).Forget();
 
-            var message = new P_DisconnectRequest();
-            var data = MemoryPackSerializer.Serialize(message);
-            MistManager.I.Send(MistNetMessageType.DisconnectRequest, data, id);
+            // var message = new P_DisconnectRequest();
+            // var data = MemoryPackSerializer.Serialize(message);
+            // MistManager.I.Send(MistNetMessageType.DisconnectRequest, data, id);
+            
+            // 切断許可を返す
+            var message = new P_DisconnectResponse();
+            var bytes = MemoryPackSerializer.Serialize(message);
+            MistManager.I.Send(MistNetMessageType.DisconnectResponse, bytes, id);
         }
 
         /// <summary>
@@ -161,7 +217,7 @@ namespace MistNet
         private void OnDisconnectRequest(byte[] data, string sourceId)
         {
             var disconnectList = MistOptimizationManager.I.Data.PeerDisconnectRequestList;
-            if (disconnectList.Contains(sourceId))
+            if (disconnectList.Contains(sourceId))　// 自身も切断しようとしていたかどうか
             {
                 // お互いに切断対象が同じである場合
                 if (CompareId(sourceId)) return;    // どちらが切断するかを決める
@@ -171,7 +227,7 @@ namespace MistNet
                 var bytes = MemoryPackSerializer.Serialize(message);
                 MistManager.I.Send(MistNetMessageType.DisconnectResponse, bytes, sourceId);
 
-                // return;
+                return;
             }
             
             // 切断リストに追加する
@@ -216,7 +272,7 @@ namespace MistNet
         private void SendConnectRequest(string id)
         {
             if (id == MistManager.I.MistPeerData.SelfId) return; // 自分自身には接続しない
-            if (CompareId(id)) return;
+            // if (CompareId(id)) return;
 
             MistDebug.Log($"[ConnectRequest] {MistManager.I.MistPeerData.SelfId} -> {id}");
             MistManager.I.Connect(id).Forget();
@@ -294,6 +350,13 @@ namespace MistNet
         private string ParseChunk((int, int, int) valueChunk)
         {
             return $"{valueChunk.Item1},{valueChunk.Item2},{valueChunk.Item3}";
+        }
+
+        private void SendLeaderNotify()
+        {
+            var message = new P_LeaderNotify();
+            var bytes = MemoryPackSerializer.Serialize(message);
+            MistManager.I.SendAll(MistNetMessageType.LeaderNotify, bytes);
         }
     }
 }

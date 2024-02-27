@@ -200,7 +200,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   prefabAddress: MistPlayerTest
-  randomSpawn: 0
+  randomSpawn: 1
+  yFixed: 1
 --- !u!4 &994400528
 Transform:
   m_ObjectHideFlags: 0
@@ -638,7 +639,7 @@ PrefabInstance:
     - target: {fileID: 1356439322518889549, guid: abb203be92da0fd47b5814dfd39149e6,
         type: 3}
       propertyPath: filters
-      value: STATS or DataChannel
+      value: STATS or DataChannel or Leader
       objectReference: {fileID: 0}
     - target: {fileID: 4416884298952503070, guid: abb203be92da0fd47b5814dfd39149e6,
         type: 3}
@@ -792,7 +793,7 @@ PrefabInstance:
     - target: {fileID: 2003660962140733667, guid: 701c67af5a70dfc45bd6ed39e5d18584,
         type: 3}
       propertyPath: showLog
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2003660962140733667, guid: 701c67af5a70dfc45bd6ed39e5d18584,
         type: 3}
@@ -863,7 +864,7 @@ PrefabInstance:
     - target: {fileID: 8750905894533009966, guid: 701c67af5a70dfc45bd6ed39e5d18584,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 7935780440447089082, guid: 701c67af5a70dfc45bd6ed39e5d18584, type: 3}

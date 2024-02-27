@@ -262,8 +262,8 @@ namespace MistNet
             MistSyncManager.I.DestroyBySenderId(id);
             MistOptimizationManager.I?.OnDisconnected(id);
 
-            MistPeerData.I.GetPeerData(id).State = MistPeerState.Disconnected;
-            MistPeerData.I.GetAllPeer.Remove(id);
+            
+            // MistPeerData.I.GetAllPeer.Remove(id);
             OnDisconnectedAction?.Invoke(id);
         }
 

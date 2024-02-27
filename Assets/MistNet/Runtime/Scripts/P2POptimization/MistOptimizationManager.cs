@@ -32,6 +32,7 @@ namespace MistNet
         public void OnDisconnected(string id)
         {
             Data.RemovePeer(id);
+            MistConnectionOptimizer.I.OnDisconnected(id);
         }
         
         /// <summary>

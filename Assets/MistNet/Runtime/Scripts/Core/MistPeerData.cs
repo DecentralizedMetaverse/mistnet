@@ -45,7 +45,6 @@ namespace MistNet
                 peerData.Peer.Id = id;
                 return peerData.Peer;
             }
-
             
             _dict.Add(id, new MistPeerDataElement(id));
             return _dict[id].Peer;
@@ -92,10 +91,11 @@ namespace MistNet
         public string Id;
         public Vector3 Position;
         public int CurrentConnectNum;
-        public int MinConnectNum;
+        public int MinConnectNum = 2;
         public int LimitConnectNum;
         public int MaxConnectNum;
         public MistPeerState State = MistPeerState.Disconnected;
+        public float BlockConnectIntervalTime;  // 切断されたからの時間
 
         public MistPeerDataElement(string id)
         {

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
-using Unity.Plastic.Newtonsoft.Json;
+using Newtonsoft.Json;
 
 namespace MistNet
 {
