@@ -35,7 +35,7 @@ namespace MistNet
         {
             MistDebug.Log($"[MistSignaling] SendOffer: {targetId}");
             var peer = MistManager.I.MistPeerData.GetPeer(targetId);
-            peer.OnCandidate = (ice) => SendCandidate(ice, targetId);
+            peer.OnCandidate = ice => SendCandidate(ice, targetId);
 
             var desc = await peer.CreateOffer();
             var sendData = CreateSendData();

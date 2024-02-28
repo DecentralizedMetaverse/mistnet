@@ -68,12 +68,12 @@ namespace MistNet
             peerData.State = state;
         }
 
-        public void UpdatePeerData(string id, P_PeerData data)
+        public bool UpdatePeerData(string id, P_PeerData data)
         {
-            if (string.IsNullOrEmpty(id)) return;
+            if (string.IsNullOrEmpty(id)) return false;
             
             _dict.TryAdd(id, new MistPeerDataElement(id));
-
+            
             var peerData = _dict[id];
             peerData.Id = id;
             peerData.Peer.Id = id;
@@ -82,6 +82,9 @@ namespace MistNet
             peerData.MinConnectNum = data.MinConnectNum;
             peerData.LimitConnectNum = data.LimitConnectNum;
             peerData.MaxConnectNum = data.MaxConnectNum;
+
+            // return peerData.State != MistPeerState.Connected;
+            return true;
         }
     }
 
@@ -95,7 +98,7 @@ namespace MistNet
         public int LimitConnectNum;
         public int MaxConnectNum;
         public MistPeerState State = MistPeerState.Disconnected;
-        public float BlockConnectIntervalTime;  // 切断されたからの時間
+        public float Distance { get; set; }
 
         public MistPeerDataElement(string id)
         {

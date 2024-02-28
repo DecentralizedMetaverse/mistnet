@@ -26,7 +26,7 @@ namespace MistNet
         public Action<string> OnDisconnectedAction;
         
 
-        private readonly MistRoutingTable _routingTable = new();
+        public readonly MistRoutingTable RoutingTable = new();
         private readonly MistConfig _config = new();
         private readonly Dictionary<MistNetMessageType, Action<byte[], string>> _onMessageDict = new();
         private readonly Dictionary<string, Delegate> _functionDict = new();
@@ -72,7 +72,7 @@ namespace MistNet
 
             if (!MistPeerData.IsConnected(targetId))
             {
-                targetId = _routingTable.Get(targetId);
+                targetId = RoutingTable.Get(targetId);
                 MistDebug.Log($"[SEND][FORWARD] {targetId} -> {message.TargetId}");
             }
 
@@ -208,7 +208,7 @@ namespace MistNet
             var targetId = message.TargetId;
             if (!MistPeerData.IsConnected(message.TargetId))
             {
-                targetId = _routingTable.Get(message.TargetId);
+                targetId = RoutingTable.Get(message.TargetId);
             }
 
             if (!string.IsNullOrEmpty(targetId))
@@ -228,7 +228,7 @@ namespace MistNet
 
         private void ProcessMessageForSelf(MistMessage message, string senderId)
         {
-            _routingTable.Add(message.Id, senderId);
+            RoutingTable.Add(message.Id, senderId);
             _onMessageDict[message.Type].DynamicInvoke(message.Data, message.Id);
         }
 
@@ -236,7 +236,9 @@ namespace MistNet
         {
             ConnectAction.Invoke(id);
             MistPeerData.GetPeerData(id).State = MistPeerState.Connecting;
+            
             await UniTask.Delay(TimeSpan.FromSeconds(WaitConnectingTimeSec));
+            
             if (MistPeerData.GetPeerData(id).State == MistPeerState.Connecting)
             {
                 MistDebug.Log($"[Connect] {id} is not connected");
