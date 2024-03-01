@@ -112,7 +112,6 @@ namespace MistNet
         private void OptimizeHandler()
         {
             MistDebug.Log($"[Info] {_leaderTime}/{_leaderTimeMax}");
-            if (_leaderTime > 0) return;
 
             var selfSyncObject = MistSyncManager.I.SelfSyncObject;
             if (selfSyncObject == null) return;
@@ -146,12 +145,15 @@ namespace MistNet
 
                 if (peerCount <= MistConfig.LimitConnection)
                 {
+                    if (_leaderTime > 0) continue;
+
                     if (peerData.State == MistPeerState.Disconnected &&
                         peerData.CurrentConnectNum < peerData.MaxConnectNum)
                         // &&peerData.BlockConnectIntervalTime == 0)
                     {
                         SendConnectRequest(id);
                         MistDebug.Log("[Debug] SendConnectRequest");
+                        SendLeaderNotify();
                     }
                 }
                 else if (peerData.State == MistPeerState.Connected &&
@@ -159,7 +161,6 @@ namespace MistNet
                 {
                     SendDisconnectRequest(id);
                     MistDebug.Log("[Debug] SendDisconnectRequest");
-                    SendLeaderNotify();
                 }
 
                 peerCount++;
