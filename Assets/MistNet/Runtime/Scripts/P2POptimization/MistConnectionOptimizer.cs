@@ -38,8 +38,8 @@ namespace MistNet
         {
             InitLeaderTime();
 
-            MistManager.I.AddRPC(MistNetMessageType.DisconnectRequest, OnDisconnectRequest);
-            MistManager.I.AddRPC(MistNetMessageType.DisconnectResponse, OnDisconnectResponse);
+            // MistManager.I.AddRPC(MistNetMessageType.DisconnectRequest, OnDisconnectRequest);
+            // MistManager.I.AddRPC(MistNetMessageType.DisconnectResponse, OnDisconnectResponse);
             MistManager.I.AddRPC(MistNetMessageType.PeerData, OnPeerTableResponse);
             MistManager.I.AddRPC(MistNetMessageType.LeaderNotify, (_, _) =>
             {
@@ -87,8 +87,7 @@ namespace MistNet
 
         public void OnDisconnected(string id)
         {
-            var peerData = MistPeerData.I.GetPeerData(id);
-            peerData.State = MistPeerState.Disconnected;
+            MistPeerData.I.SetState(id, MistPeerState.Disconnected);
         }
 
         private void OnPeerTableResponse(byte[] data, string sourceId)
@@ -145,7 +144,7 @@ namespace MistNet
 
                 if (peerCount <= MistConfig.LimitConnection)
                 {
-                    if (_leaderTime > 0) continue;
+                    if (_leaderTime > 0) continue; // 権利がない場合は接続しない
 
                     if (peerData.State == MistPeerState.Disconnected &&
                         peerData.CurrentConnectNum < peerData.MaxConnectNum)
@@ -199,56 +198,47 @@ namespace MistNet
 
         private void SendDisconnectRequest(string id)
         {
-            // AddDisconnectListAndDelayCancel(id).Forget();
-
-            // var message = new P_DisconnectRequest();
-            // var data = MemoryPackSerializer.Serialize(message);
-            // MistManager.I.Send(MistNetMessageType.DisconnectRequest, data, id);
-
-            // 切断許可を返す
-            var message = new P_DisconnectResponse();
-            var bytes = MemoryPackSerializer.Serialize(message);
-            MistManager.I.Send(MistNetMessageType.DisconnectResponse, bytes, id);
+            if (CompareId(id)) return; // どちらが切断するかを決める
+            MistManager.I.Disconnect(id);
+            // var message = new P_DisconnectResponse();
+            // var bytes = MemoryPackSerializer.Serialize(message);
+            // MistManager.I.Send(MistNetMessageType.DisconnectRequest, bytes, id);
         }
 
-        /// <summary>
-        /// 相手からの切断要求を受け取る
-        /// </summary>
-        /// <param name="data"></param>
-        /// <param name="sourceId"></param>
-        /// <param name="_"></param>
-        private void OnDisconnectRequest(byte[] data, string sourceId)
-        {
-            var disconnectList = MistOptimizationManager.I.Data.PeerDisconnectRequestList;
-            if (disconnectList.Contains(sourceId))　// 自身も切断しようとしていたかどうか
-            {
-                // お互いに切断対象が同じである場合
-                if (CompareId(sourceId)) return; // どちらが切断するかを決める
-
-                // 切断許可を返す
-                var message = new P_DisconnectResponse();
-                var bytes = MemoryPackSerializer.Serialize(message);
-                MistManager.I.Send(MistNetMessageType.DisconnectResponse, bytes, sourceId);
-
-                return;
-            }
-
-            // 切断リストに追加する
-            AddDisconnectListAndDelayCancel(sourceId).Forget();
-        }
-
-        private void OnDisconnectResponse(byte[] data, string sourceId)
-        {
-            // if (!IsConnectionAtLimit()) return;
-
-            // 切断する
-            MistManager.I.Disconnect(sourceId);
-            var disconnectList = MistOptimizationManager.I.Data.PeerDisconnectRequestList;
-            if (disconnectList.Contains(sourceId))
-            {
-                disconnectList.Remove(sourceId);
-            }
-        }
+        // /// <summary>
+        // /// 相手からの切断要求を受け取る
+        // /// </summary>
+        // /// <param name="data"></param>
+        // /// <param name="sourceId"></param>
+        // /// <param name="_"></param>
+        // private void OnDisconnectRequest(byte[] data, string sourceId)
+        // {
+        //     var disconnectList = MistOptimizationManager.I.Data.PeerDisconnectRequestList;
+        //     if (!disconnectList.Contains(sourceId)) return; // 自身も切断しようとしていたかどうか
+        //     // お互いに切断対象が同じである場合
+        //     if (CompareId(sourceId)) return; // どちらが切断するかを決める
+        //
+        //     // 切断許可を返す
+        //     var message = new P_DisconnectResponse();
+        //     var bytes = MemoryPackSerializer.Serialize(message);
+        //     MistManager.I.Send(MistNetMessageType.DisconnectResponse, bytes, sourceId);
+        //
+        //     // // 切断リストに追加する
+        //     // AddDisconnectListAndDelayCancel(sourceId).Forget();
+        // }
+        //
+        // private void OnDisconnectResponse(byte[] data, string sourceId)
+        // {
+        //     // if (!IsConnectionAtLimit()) return;
+        //
+        //     // 切断する
+        //     MistManager.I.Disconnect(sourceId);
+        //     var disconnectList = MistOptimizationManager.I.Data.PeerDisconnectRequestList;
+        //     if (disconnectList.Contains(sourceId))
+        //     {
+        //         disconnectList.Remove(sourceId);
+        //     }
+        // }
 
         private async UniTaskVoid AddDisconnectListAndDelayCancel(string id)
         {

@@ -1,6 +1,5 @@
 <linker>
   <assembly fullname="MistNet, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-    <type fullname="MistNet.MistAnimator" preserve="all" />
     <type fullname="MistNet.MistConnectionOptimizer" preserve="all" />
     <type fullname="MistNet.MistDebugColorChange" preserve="all" />
     <type fullname="MistNet.MistDebugMove" preserve="all" />
@@ -14,7 +13,6 @@
     <type fullname="MistNet.MistSyncManager" preserve="all" />
     <type fullname="MistNet.MistSyncObject" preserve="all" />
     <type fullname="MistNet.MistTransform" preserve="all" />
-    <type fullname="MistNet.MistAnimator/AnimatorState" preserve="nothing" serialized="true" />
   </assembly>
   <assembly fullname="Unity.Addressables, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" preserve="all">
     <type fullname="UnityEngine.AddressableAssets.Addressables" preserve="all" />
@@ -39,10 +37,6 @@
     <type fullname="TMPro.TMP_GlyphPairAdjustmentRecord" preserve="nothing" serialized="true" />
     <type fullname="TMPro.TMP_GlyphValueRecord" preserve="nothing" serialized="true" />
     <type fullname="TMPro.VertexGradient" preserve="nothing" serialized="true" />
-  </assembly>
-  <assembly fullname="UnityEngine.AnimationModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-    <type fullname="UnityEngine.Animator" preserve="all" />
-    <type fullname="UnityEngine.RuntimeAnimatorController" preserve="all" />
   </assembly>
   <assembly fullname="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
     <type fullname="UnityEngine.GameObject" preserve="all" />

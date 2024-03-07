@@ -11,9 +11,10 @@ namespace MistNet
         public static MistPeerData I { get; private set; } = new();
         public string SelfId { get; private set; }
         public Dictionary<string, MistPeerDataElement> GetAllPeer => _dict;
-        public List<MistPeerDataElement> GetConnectedPeer => 
+
+        public List<MistPeerDataElement> GetConnectedPeer =>
             _dict.Values.Where(x => x.State is MistPeerState.Connected or MistPeerState.Disconnecting).ToList();
-        
+
         private readonly Dictionary<string, MistPeerDataElement> _dict = new();
 
         public void Init()
@@ -23,7 +24,7 @@ namespace MistNet
             MistDebug.Log($"[Self ID] {SelfId}");
             _dict.Clear();
         }
-        
+
         public void AllForceClose()
         {
             foreach (var peerData in _dict.Values)
@@ -43,9 +44,9 @@ namespace MistNet
             if (_dict.TryGetValue(id, out var peerData))
             {
                 peerData.Peer.Id = id;
-                return peerData.Peer;
+                return peerData.Peer ?? (peerData.Peer = new(id));
             }
-            
+
             _dict.Add(id, new MistPeerDataElement(id));
             return _dict[id].Peer;
         }
@@ -56,25 +57,33 @@ namespace MistNet
             {
                 MistDebug.LogError("GetPeerData id is null");
             }
+
             MistDebug.Log($"[GetPeerData] {id}");
-            return _dict.TryGetValue(id, out var peerData) ? 
-                peerData : null;
+            if (!_dict.TryGetValue(id, out var peerData)) return null;
+            peerData.Peer ??= new(id); // TODO: ここでPeerを生成しても大丈夫か
+            return peerData;
         }
-        
+
         public void SetState(string id, MistPeerState state)
         {
             if (string.IsNullOrEmpty(id)) return;
             if (!_dict.TryGetValue(id, out var peerData)) return;
             peerData.State = state;
+            if (state == MistPeerState.Disconnected)
+            {
+                peerData.Peer = null;
+            }
         }
 
         public bool UpdatePeerData(string id, P_PeerData data)
         {
             if (string.IsNullOrEmpty(id)) return false;
-            
+
             _dict.TryAdd(id, new MistPeerDataElement(id));
+
             
             var peerData = _dict[id];
+            peerData.Peer ??= new(id);
             peerData.Id = id;
             peerData.Peer.Id = id;
             peerData.Position = data.Position;
@@ -105,6 +114,7 @@ namespace MistNet
             Id = id;
             Peer = new(id);
         }
+
         public bool IsConnected => State == MistPeerState.Connected;
     }
 
@@ -114,15 +124,15 @@ namespace MistNet
         public readonly static int Size = 16;
         private readonly static int ChunkSize = 3;
         private readonly static float DivideSize = 1.0f / Size;
-        private static Chunk _previousChunk = new ();
+        private static Chunk _previousChunk = new();
         private static Chunk[] _surroundingChunks = new Chunk[ChunkSize * ChunkSize * ChunkSize];
-        
+
         public int X = 0;
         public int Y = 0;
         public int Z = 0;
         public Chunk[] SurroundingChunks => _surroundingChunks;
-        
-        
+
+
         public Chunk()
         {
         }
@@ -137,7 +147,8 @@ namespace MistNet
             foreach (var surroundingChunk in _surroundingChunks)
             {
                 if (surroundingChunk == null) continue;
-                if (surroundingChunk.X == chunk.Item1 && surroundingChunk.Y == chunk.Item2 && surroundingChunk.Z == chunk.Item3)
+                if (surroundingChunk.X == chunk.Item1 && surroundingChunk.Y == chunk.Item2 &&
+                    surroundingChunk.Z == chunk.Item3)
                 {
                     return true;
                 }
@@ -192,14 +203,14 @@ namespace MistNet
         private void GetSurroundingChunks()
         {
             MistDebug.Log("GetSurroundingChunks");
-            for(var x = 0; x < ChunkSize; x++)
+            for (var x = 0; x < ChunkSize; x++)
             {
-                for(var y = 0; y < ChunkSize; y++)
+                for (var y = 0; y < ChunkSize; y++)
                 {
-                    for(var z = 0; z < ChunkSize; z++)
+                    for (var z = 0; z < ChunkSize; z++)
                     {
                         var index = x + y * ChunkSize + z * ChunkSize * ChunkSize;
-                        _surroundingChunks[index] ??= new ();
+                        _surroundingChunks[index] ??= new();
                         _surroundingChunks[index].X = X + x - 1;
                         _surroundingChunks[index].Y = Y + y - 1;
                         _surroundingChunks[index].Z = Z + z - 1;
