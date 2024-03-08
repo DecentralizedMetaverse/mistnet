@@ -99,7 +99,7 @@ messages:
         type: long       
         
   - name: PropertyRequest     
-  - name: LeaderNotify
+  - name: LeaderNotify    
         
   - name: Error
     fields:

@@ -108,7 +108,7 @@ namespace MistNet
         public int MaxConnectNum;
         public MistPeerState State = MistPeerState.Disconnected;
         public float Distance { get; set; }
-
+        public int BlockConnectIntervalTime { get; set; }
         public MistPeerDataElement(string id)
         {
             Id = id;
