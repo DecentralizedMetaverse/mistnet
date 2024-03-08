@@ -141,6 +141,7 @@ namespace MistNet
 
             var debugText = $"[Info]\n";
             var peerCount = 0;
+            var connectCount = 0;
             foreach (var element in sortedPeerList)
             {
                 var id = element.Id;
@@ -152,7 +153,12 @@ namespace MistNet
 
                 if (peerCount <= MistConfig.LimitConnection)
                 {
-                    if (_leaderTime > 0) continue; // 権利がない場合は接続しない
+                    connectCount++;
+                    if (_leaderTime > 0)
+                    {
+                        peerCount++;
+                        continue; // 権利がない場合は接続しない
+                    }
 
                     if (peerData.State == MistPeerState.Disconnected &&
                         peerData.CurrentConnectNum < peerData.MaxConnectNum &&
@@ -164,7 +170,8 @@ namespace MistNet
                     }
                 }
                 else if (peerData.State == MistPeerState.Connected &&
-                         peerData.CurrentConnectNum > peerData.MinConnectNum)
+                         peerData.CurrentConnectNum > peerData.MinConnectNum&&
+                         connectCount > MistConfig.LimitConnection)
                 {
                     SendDisconnectRequest(id);
                     MistDebug.Log($"[Info][Debug] SendDisconnectRequest {id}");
