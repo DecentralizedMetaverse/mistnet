@@ -128,13 +128,8 @@ namespace MistNet
 
                 var value = JsonUtility.FromJson<Ice>(candidate);
                 _candidateData.Add(candidate);
-
-                if(peer == null) 
-                {
-                    MistDebug.LogError($"[MistSignaling] peer is null");
-                    return;
-                }
-                peer.AddIceCandidate(value); // TODO: Error箇所
+                
+                peer.AddIceCandidate(value);
             }
         }
 

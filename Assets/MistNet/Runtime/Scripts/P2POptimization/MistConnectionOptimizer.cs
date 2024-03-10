@@ -185,7 +185,7 @@ namespace MistNet
 
         private void SendDisconnectRequest(string id)
         {
-            // if (CompareId(id)) return; // どちらが切断するかを決める
+            if (CompareId(id)) return; // どちらが切断するかを決める
             MistManager.I.Disconnect(id);
         }
 
