@@ -79,7 +79,7 @@ namespace MistNet
                 // MistDebug.Log($"[Info] {_leaderTime}");
             }
         }
-        
+
         private async UniTaskVoid UpdateBlockConnectIntervalTime(string id, CancellationToken token)
         {
             var peerData = MistPeerData.I.GetPeerData(id);
@@ -87,7 +87,7 @@ namespace MistNet
             while (peerData.BlockConnectIntervalTime > 0)
             {
                 await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: token);
-                peerData.BlockConnectIntervalTime --;
+                peerData.BlockConnectIntervalTime--;
             }
         }
 
@@ -170,7 +170,7 @@ namespace MistNet
                     }
                 }
                 else if (peerData.State == MistPeerState.Connected &&
-                         peerData.CurrentConnectNum > peerData.MinConnectNum&&
+                         peerData.CurrentConnectNum > peerData.MinConnectNum &&
                          connectCount > MistConfig.LimitConnection)
                 {
                     SendDisconnectRequest(id);
@@ -268,7 +268,7 @@ namespace MistNet
             if (String.CompareOrdinal(selfId, sourceId) < 0) return true;
             return false;
         }
-        
+
         private void SendLeaderNotify()
         {
             MistDebug.Log($"[Leader]");

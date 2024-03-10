@@ -43,8 +43,9 @@ namespace MistNet
         {
             if (_dict.TryGetValue(id, out var peerData))
             {
-                peerData.Peer.Id = id;
-                return peerData.Peer ?? (peerData.Peer = new(id));
+                if (peerData.Peer == null) peerData.Peer = new MistPeer(id);
+                else peerData.Peer.Id = id;
+                return peerData.Peer;
             }
 
             _dict.Add(id, new MistPeerDataElement(id));
