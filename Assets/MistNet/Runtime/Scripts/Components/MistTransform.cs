@@ -64,7 +64,7 @@ namespace MistNet
             _sendData.Position = transform.position;
             _sendData.Rotation = transform.rotation.eulerAngles;
             
-            if (_syncObject.IsPlayerObject)
+            if (_syncObject.IsPlayerObject && MistSendingOptimizer.I != null)
             {
                 MistSendingOptimizer.I.SendLocationData = _sendData;
                 return;

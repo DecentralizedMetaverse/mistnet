@@ -1,7 +1,7 @@
 {
   "SignalingServerAddress": "ws://localhost:8080/ws",
-  "LimitConnection": 20,
-  "MaxConnection": 80,
+  "LimitConnection": 5,
+  "MaxConnection": 8,
   "StunUrls": [
     "stun:stun.l.google.com:19302"
   ],

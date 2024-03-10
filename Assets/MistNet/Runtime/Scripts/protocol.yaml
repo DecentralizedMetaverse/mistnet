@@ -98,7 +98,8 @@ messages:
       - name: Time
         type: long       
         
-  - name: PropertyRequest            
+  - name: PropertyRequest     
+  - name: LeaderNotify    
         
   - name: Error
     fields:

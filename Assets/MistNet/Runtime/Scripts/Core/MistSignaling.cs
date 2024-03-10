@@ -35,7 +35,7 @@ namespace MistNet
         {
             MistDebug.Log($"[MistSignaling] SendOffer: {targetId}");
             var peer = MistManager.I.MistPeerData.GetPeer(targetId);
-            peer.OnCandidate = (ice) => SendCandidate(ice, targetId);
+            peer.OnCandidate = ice => SendCandidate(ice, targetId);
 
             var desc = await peer.CreateOffer();
             var sendData = CreateSendData();
@@ -128,13 +128,8 @@ namespace MistNet
 
                 var value = JsonUtility.FromJson<Ice>(candidate);
                 _candidateData.Add(candidate);
-
-                if(peer == null) 
-                {
-                    MistDebug.LogError($"[MistSignaling] peer is null");
-                    return;
-                }
-                peer.AddIceCandidate(value); // TODO: Error箇所
+                
+                peer.AddIceCandidate(value);
             }
         }
 
