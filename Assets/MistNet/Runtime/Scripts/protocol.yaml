@@ -16,6 +16,8 @@ messages:
         type: Vector3
       - name: Rotation
         type: Vector3
+      - name: Velocity
+        type: Vector3
       - name: Time
         type: float
 

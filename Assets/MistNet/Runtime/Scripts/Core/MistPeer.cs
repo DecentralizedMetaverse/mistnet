@@ -199,11 +199,18 @@ namespace MistNet
         public void Close()
         {
             // DataChannelを閉じる
-            _dataChannel.Close();
+            _dataChannel?.Close();
+
+            // PeerConnectionを閉じる
+            Connection.Close();
         }
 
         public void ForceClose()
         {
+            // DataChannelを閉じる
+            _dataChannel?.Close();
+
+            // PeerConnectionを閉じる
             Connection.Close();
         }
 
@@ -217,6 +224,7 @@ namespace MistNet
                     break;
                 case RTCIceConnectionState.Disconnected:
                     OnDisconnected?.Invoke(Id);
+                    Connection.Close();
                     break;
             }
         }
@@ -230,8 +238,6 @@ namespace MistNet
         private void OnCloseDataChannel()
         {
             MistDebug.Log($"[Signaling][DataChannel] Finalize -> {Id}");
-            // PeerConnectionを閉じる
-            Connection.Close();
         }
 
         private void OnMessageDataChannel(byte[] data)

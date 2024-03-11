@@ -9,6 +9,7 @@ namespace MistNet
     public class MistConfig
     {
         private static readonly string ConfigPath = $"{Application.dataPath}/../MistNetConfig.json";
+        public static int MinConnection { get; private set; } = 3;
         public static int LimitConnection { get; private set; } = 20;
         public static int MaxConnection { get; private set; } = 80;
         public static string SignalingServerAddress { get; private set; } = "ws://localhost:8080/ws";
@@ -30,6 +31,7 @@ namespace MistNet
         private class MistConfigData
         {
             public string SignalingServerAddress;
+            public int MinConnection;
             public int LimitConnection;
             public int MaxConnection;
             public string[] StunUrls;
@@ -42,6 +44,7 @@ namespace MistNet
             var txt = File.ReadAllText(ConfigPath);
             var config = JsonConvert.DeserializeObject<MistConfigData>(txt);
             
+            MinConnection = config.MinConnection;
             LimitConnection = config.LimitConnection;
             MaxConnection = config.MaxConnection;
             SignalingServerAddress = config.SignalingServerAddress;
@@ -54,6 +57,7 @@ namespace MistNet
         {
             var config = new MistConfigData
             {
+                MinConnection = MinConnection,
                 LimitConnection = LimitConnection,
                 MaxConnection = MaxConnection,  
                 SignalingServerAddress = SignalingServerAddress,

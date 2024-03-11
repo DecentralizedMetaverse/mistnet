@@ -55,7 +55,13 @@ namespace MistNet
             var targetId = response["id"].ToString();
             var peer = MistManager.I.MistPeerData.GetPeer(targetId);
             
-            var sdp = JsonUtility.FromJson<RTCSessionDescription>(response["sdp"].ToString());
+            var sdpString = response["sdp"]?.ToString();
+            if (string.IsNullOrEmpty(sdpString))
+            {
+                MistDebug.LogError("sdp is null or empty");
+                return;
+            }
+            var sdp = JsonUtility.FromJson<RTCSessionDescription>(sdpString);
             peer.SetRemoteDescription(sdp).Forget();
         }
 

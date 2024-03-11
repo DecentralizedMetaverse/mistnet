@@ -1,16 +1,17 @@
 {
   "SignalingServerAddress": "ws://localhost:8080/ws",
-  "LimitConnection": 5,
-  "MaxConnection": 8,
+  "MinConnection": 3,
+  "LimitConnection": 10,
+  "MaxConnection": 20,
   "StunUrls": [
     "stun:stun.l.google.com:19302"
   ],
   "RadiusAndSendIntervalSeconds": {
-    "3": 0.1,
-    "6": 0.2,
-    "12": 0.4,
-    "24": 0.8,
-    "48": 1.6,
-    "96": 3.2
+    "3": 0.5,
+    "6": 0.5,
+    "12": 0.5,
+    "24": 0.5,
+    "48": 0.5,
+    "96": 0.5
   }
 }
