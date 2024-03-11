@@ -15,9 +15,7 @@ namespace MistNet
     public class MistConnectionOptimizer : MonoBehaviour
     {
         private const float IntervalSendTableTimeSec = 1.5f;
-        private const float RemoveDisconnectTimeSec = 10f;
         private const int BlockConnectIntervalTimeSec = 10;
-        private const float IntervalLogPeerTableTimeSec = 5f; // ピアテーブルをログ出力する間隔
 
         public static MistConnectionOptimizer I { get; private set; }
         private CancellationTokenSource _cancellationTokenSource;
