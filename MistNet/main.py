@@ -82,6 +82,7 @@ class WebSocketServer:
     async def handle_evaluation(self, data):
         client_id = data["id"]
         location = data["location"]
+        connection = data["connection"]
         time = datetime.datetime.now()
         
         # 時刻を1秒単位に丸める
@@ -91,7 +92,10 @@ class WebSocketServer:
         # 丸めた時刻をキーとして、全クライアントの位置を記録
         if rounded_time not in self.evaluation:
             self.evaluation[rounded_time] = {}
-        self.evaluation[rounded_time][client_id] = location
+            self.evaluation[rounded_time][client_id] = {}
+            
+        self.evaluation[rounded_time][client_id]["location"] = location
+        self.evaluation[rounded_time][client_id]["connection"] = connection
 
     async def send_message(self, client, data):
         logging.info(f"[SEND] {data}")
@@ -110,8 +114,7 @@ class WebSocketServer:
 
     def save_evaluation(self):
         # 評価データをJSON形式で保存
-        with open("evaluation.json", "w") as f:
-            print(self.evaluation)
+        with open("evaluation.json", "w") as f:            
             # 整形して保存
             json.dump(self.evaluation, f, default=str, indent=4)
 

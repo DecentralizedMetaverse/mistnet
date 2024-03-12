@@ -245,7 +245,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   prefabAddress: MistPlayerTest
   randomSpawn: 1
-  yFixed: 0
+  yFixed: 1
 --- !u!4 &994400528
 Transform:
   m_ObjectHideFlags: 0

@@ -20,6 +20,7 @@ namespace MyNamespace
         {
             { "type", "evaluation" },
             { "location", ""},
+            { "connection", ""},
             { "id", "" },
         };
         private void Start()
@@ -43,9 +44,12 @@ namespace MyNamespace
                 
                 _locationData["id"] = MistSyncManager.I.SelfSyncObject.Id;
                 
+                var connection = MistConnectionOptimizer.I.GetConnectionInfo();
                 var position = MistSyncManager.I.SelfSyncObject.transform.position;
                 var positionStr = $"{position.x},{position.y},{position.z}";
                 _locationData["location"] = positionStr;
+                _locationData["connection"] = connection;
+                
                 MistSignalingWebSocket.I.Ws.Send(JsonConvert.SerializeObject(_locationData));
                 MistDebug.Log($"[Eval] Send location: {positionStr}");
             }

@@ -288,5 +288,12 @@ namespace MistNet
 
             MistDebug.Log(logMessage);
         }
+        
+        public string GetConnectionInfo()
+        {
+            var allPeers = MistPeerData.I.GetAllPeer.Values;
+            var list =  allPeers.Where(peer => peer.State == MistPeerState.Connected).Select(peer => peer.Id);
+            return string.Join(",", list);
+        }
     }
 }
