@@ -41,8 +41,8 @@ namespace MyNamespace
                 await UniTask.Delay(TimeSpan.FromSeconds(IntervalDistanceTimeSec), cancellationToken: token);
 
                 if (MistSyncManager.I.SelfSyncObject == null) continue;
-                
-                _locationData["id"] = MistSyncManager.I.SelfSyncObject.Id;
+
+                _locationData["id"] = MistPeerData.I.SelfId;
                 
                 var connection = MistConnectionOptimizer.I.GetConnectionInfo();
                 var position = MistSyncManager.I.SelfSyncObject.transform.position;
