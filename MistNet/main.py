@@ -91,11 +91,10 @@ class WebSocketServer:
 
         # 丸めた時刻をキーとして、全クライアントの位置を記録
         if rounded_time not in self.evaluation:
-            self.evaluation[rounded_time] = {}
-            self.evaluation[rounded_time][client_id] = {}
+            self.evaluation[rounded_time] = {}            
             
-        self.evaluation[rounded_time][client_id]["location"] = location
-        self.evaluation[rounded_time][client_id]["connection"] = connection
+        self.evaluation[rounded_time][client_id]= {"location": location, "connection": connection}
+                
 
     async def send_message(self, client, data):
         logging.info(f"[SEND] {data}")

@@ -39,9 +39,9 @@ namespace MistNet
         private void OnLogMessageReceived(string condition, string stacktrace, LogType type)
         {
             if (!IsConditionMatched(condition)) return;
-
+            var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             _log += $"{condition}\n";
-            _logAll += $"{condition}\n";
+            _logAll += $"[{timestamp}] {condition}\n";
             var lines = _log.Split('\n');
             if (lines.Length > maxLogLines)
             {
