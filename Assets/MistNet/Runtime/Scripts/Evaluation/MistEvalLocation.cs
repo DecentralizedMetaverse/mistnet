@@ -13,7 +13,7 @@ namespace MyNamespace
     /// </summary>
     public class MistEvalLocation : MonoBehaviour
     {
-        private static readonly float IntervalDistanceTimeSec = 1f;
+        private static readonly float IntervalDistanceTimeSec = 0.5f;
         private CancellationTokenSource _cancelTokenSource = new();
 
         private Dictionary<string, object> _locationData = new()

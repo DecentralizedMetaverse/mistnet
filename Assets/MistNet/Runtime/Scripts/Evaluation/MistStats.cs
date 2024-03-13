@@ -71,6 +71,10 @@ namespace MistNet
         {
             while (!token.IsCancellationRequested)
             {
+                // 現在の接続人数を調べる
+                var peers = MistPeerData.I.GetConnectedPeer;
+                MistDebug.Log($"[STATS][Peers] {peers.Count}/{MistConfig.LimitConnection}/{MistConfig.MaxConnection}");
+                
                 // 帯域幅(bps)を計算
                 var sendBps = TotalSendBytes * 8 / IntervalSendSizeTimeSec;
                 MistDebug.Log($"[STATS][Upload] {sendBps} bps");
@@ -80,10 +84,6 @@ namespace MistNet
                 
                 TotalSendBytes = 0;
                 TotalReceiveBytes = 0;
-                
-                // 現在の接続人数を調べる
-                var peers = MistPeerData.I.GetConnectedPeer;
-                MistDebug.Log($"[STATS][Peers] {peers.Count}/{MistConfig.LimitConnection}/{MistConfig.MaxConnection}");
                 
                 await UniTask.Delay(TimeSpan.FromSeconds(IntervalSendSizeTimeSec), cancellationToken: token);
             }

@@ -8,7 +8,7 @@ namespace MistNet
 {
     public class MistLogView : MonoBehaviour
     {
-        private static readonly string LogFilePath = $"{Application.dataPath}/logs";
+        private static readonly string LogFilePath = $"{Application.dataPath}/../logs";
         
         [SerializeField] private int maxLogLines = 10;
         [SerializeField] private string filters = "";
@@ -17,12 +17,14 @@ namespace MistNet
         private string _log = "";
         private string _logAll = "";
         private List<Func<string, bool>> _filterFunctions;
-        
+        private string _path;
+
         private void Start()
         {
             text.text = "";
             _filterFunctions = ParseFilters(filters);
             Application.logMessageReceived += OnLogMessageReceived;
+            _path = $"{LogFilePath}/{DateTime.Now:yyyy-MM-dd-HH-mm-ss}_{MistPeerData.I.SelfId}.log";
         }
 
         private void OnDestroy()
@@ -79,8 +81,8 @@ namespace MistNet
             {
                 System.IO.Directory.CreateDirectory(LogFilePath);
             }
-            var path = $"{LogFilePath}/{DateTime.Now:yyyyMMdd_HHmmss}_{MistPeerData.I.SelfId}.txt";
-            System.IO.File.WriteAllText(path, _logAll);
+            
+            System.IO.File.WriteAllText(_path, _logAll);
         }
     }
 

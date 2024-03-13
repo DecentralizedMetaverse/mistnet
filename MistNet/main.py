@@ -21,14 +21,9 @@ class WebSocketServer:
         log_dir = "logs"
         os.makedirs(log_dir, exist_ok=True)
         logging.basicConfig(filename=f"{log_dir}/{formatted_datetime}.log", level=logging.INFO, format='%(asctime)s %(message)s')
-        
-        # 評価
-        self.start_time = datetime.datetime.now()
-        self.evaluation = {}
-        self.evaluation_interval = 5
+                
 
-    async def start_server(self):
-        asyncio.create_task(self.save_evaluation_periodically())
+    async def start_server(self):        
         async with websockets.serve(self.handle_websocket, "localhost", 8080):
             await asyncio.Future()  # Run the server indefinitely
 
@@ -81,22 +76,8 @@ class WebSocketServer:
         self.signaling_request_ids.add(client_id)    
 
     async def handle_evaluation(self, data):
-        client_id = data["id"]
-        location = data["location"]
-        connection = data["connection"]
-        time = datetime.datetime.now()
-        
-        # 時刻を1秒単位に丸める
-        rounded_time = time.replace(microsecond=0)
-        rounded_time = rounded_time.strftime('%Y-%m-%d %H:%M:%S')
-
-        # 丸めた時刻をキーとして、全クライアントの位置を記録
-        if rounded_time not in self.evaluation:
-            self.evaluation[rounded_time] = {}            
-            
-        self.evaluation[rounded_time][client_id]= {"location": location, "connection": connection}
+        pass
                 
-
     async def send_message(self, client, data):
         logging.info(f"[SEND] {data}")
         try:
@@ -107,18 +88,6 @@ class WebSocketServer:
     async def unhandled_message(self, data):
         print(f"Unhandled message type: {data['type']}")
 
-    async def save_evaluation_periodically(self):
-        while True:
-            await asyncio.sleep(self.evaluation_interval)            
-            self.save_evaluation()
-
-    def save_evaluation(self):
-        # 評価データをJSON形式で保存
-        os.makedirs("evaluation", exist_ok=True)
-        path = f"evaluation/{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}.json"
-        with open(path, "w") as f:            
-            # 整形して保存
-            json.dump(self.evaluation, f, default=str, indent=4)
 
 server = WebSocketServer()
 asyncio.run(server.start_server())
