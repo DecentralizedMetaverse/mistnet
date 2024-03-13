@@ -23,6 +23,7 @@ class WebSocketServer:
         logging.basicConfig(filename=f"{log_dir}/{formatted_datetime}.log", level=logging.INFO, format='%(asctime)s %(message)s')
         
         # 評価
+        self.start_time = datetime.datetime.now()
         self.evaluation = {}
         self.evaluation_interval = 5
 
@@ -113,7 +114,9 @@ class WebSocketServer:
 
     def save_evaluation(self):
         # 評価データをJSON形式で保存
-        with open("evaluation.json", "w") as f:            
+        os.makedirs("evaluation", exist_ok=True)
+        path = f"evaluation/{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}.json"
+        with open(path, "w") as f:            
             # 整形して保存
             json.dump(self.evaluation, f, default=str, indent=4)
 
