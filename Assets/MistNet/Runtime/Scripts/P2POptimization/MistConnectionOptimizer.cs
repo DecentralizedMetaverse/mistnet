@@ -202,8 +202,9 @@ namespace MistNet
             sendList.Add(selfBytes);
 
             // 周辺のピアの情報を追加
-            var nearbyPeers = GetNearbyPeers();
-            foreach (var element in nearbyPeers)
+            var allPeers = MistPeerData.I.GetAllPeer.Values;
+            // var nearbyPeers = GetNearbyPeers();
+            foreach (var element in allPeers)
             {
                 if (IsValidPeer(element))
                 {
