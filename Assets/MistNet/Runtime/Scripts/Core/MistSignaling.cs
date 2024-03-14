@@ -10,6 +10,8 @@ namespace MistNet
     {
         public Action<Dictionary<string, object>, string> Send;
         private readonly HashSet<string> _candidateData = new();
+        private readonly HashSet<string> _processedOffers = new();
+        private readonly HashSet<string> _sentOffers = new();
 
         public void SendSignalingRequest()
         {
@@ -33,6 +35,12 @@ namespace MistNet
         /// <returns></returns>
         public async UniTask SendOffer(string targetId)
         {
+            if (_sentOffers.Contains(targetId))
+            {
+                MistDebug.Log($"[MistSignaling] Offer already sent to: {targetId}");
+                return;
+            }
+
             MistDebug.Log($"[MistSignaling] SendOffer: {targetId}");
             var peer = MistManager.I.MistPeerData.GetPeer(targetId);
             peer.OnCandidate = ice => SendCandidate(ice, targetId);
@@ -44,6 +52,7 @@ namespace MistNet
             sendData.Add("target_id", targetId);
 
             Send(sendData, targetId);
+            _sentOffers.Add(targetId);
         }
 
         /// <summary>
@@ -61,6 +70,10 @@ namespace MistNet
                 MistDebug.LogError("sdp is null or empty");
                 return;
             }
+            MistDebug.Log($"[MistSignaling][SignalingState] {peer.SignalingState}");
+            if (peer.SignalingState == MistSignalingState.NegotiationCompleted) return;
+            if (peer.SignalingState == MistSignalingState.InitialStable) return;
+
             var sdp = JsonUtility.FromJson<RTCSessionDescription>(sdpString);
             peer.SetRemoteDescription(sdp).Forget();
         }
@@ -73,11 +86,22 @@ namespace MistNet
         public void ReceiveOffer(Dictionary<string, object> response)
         {
             var targetId = response["id"].ToString();
+
+            if (_processedOffers.Contains(targetId))
+            {
+                MistDebug.LogWarning($"[MistSignaling] Offer already processed from: {targetId}");
+                return;
+            }
+
             var peer = MistManager.I.MistPeerData.GetPeer(targetId);
+            if (peer.SignalingState == MistSignalingState.NegotiationCompleted) return;
+            
             peer.OnCandidate = (ice) => SendCandidate(ice, targetId);
 
+            MistDebug.Log($"[MistSignaling][SignalingState] {peer.Connection.SignalingState}");
             var sdp = JsonUtility.FromJson<RTCSessionDescription>(response["sdp"].ToString());
             SendAnswer(peer, sdp, targetId).Forget();
+            _processedOffers.Add(targetId);
         }
 
         /// <summary>
@@ -102,23 +126,45 @@ namespace MistNet
                 var value = JsonUtility.FromJson<Ice>(candidate);
                 peer.AddIceCandidate(value);
             }
+            
+            // 接続が完了したら、関連するオファーを削除
+            _processedOffers.Remove(targetId);
+            _sentOffers.Remove(targetId);
         }
 
         private void SendCandidate(Ice candidate, string targetId = "")
         {
+            var candidateString = JsonUtility.ToJson(candidate);
+            if (_candidateData.Contains(candidateString))
+            {
+                MistDebug.Log($"[MistSignaling] Candidate already sent: {candidateString}");
+                return;
+            }
+
             var sendData = CreateSendData();
             sendData.Add("type", "candidate_add");
-            sendData.Add("candidate", candidate);
+            sendData.Add("candidate", candidateString);
             sendData.Add("target_id", targetId);
             Send(sendData, targetId);
+            _candidateData.Add(candidateString);
+            
+            // 接続が完了したら、関連するICE候補を削除
+            var peer = MistManager.I.MistPeerData.GetPeer(targetId).Connection;
+            peer.OnIceConnectionChange = state =>
+            {
+                if (state == RTCIceConnectionState.Connected || state == RTCIceConnectionState.Completed)
+                {
+                    _candidateData.RemoveWhere(c => c.Contains($"\"target_id\":\"{targetId}\""));
+                }
+            };
         }
 
         public async void ReceiveCandidate(Dictionary<string, object> response)
         {
             var targetId = response["id"].ToString();
             var dataStr = response["candidate"].ToString();
-            
-            MistPeer peer = null;
+
+            MistPeer peer;
             while (true)
             {
                 peer = MistManager.I.MistPeerData.GetPeer(targetId);
@@ -130,11 +176,15 @@ namespace MistNet
 
             foreach (var candidate in candidates)
             {
-                if (_candidateData.Contains(candidate)) continue;
+                if (_candidateData.Contains(candidate))
+                {
+                    MistDebug.Log($"[MistSignaling] Candidate already processed: {candidate}");
+                    continue;
+                }
 
                 var value = JsonUtility.FromJson<Ice>(candidate);
                 _candidateData.Add(candidate);
-                
+
                 peer.AddIceCandidate(value);
             }
         }

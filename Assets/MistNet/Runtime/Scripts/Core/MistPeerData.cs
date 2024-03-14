@@ -84,7 +84,7 @@ namespace MistNet
 
             
             var peerData = _dict[id];
-            peerData.Peer ??= new(id);
+            peerData.Peer ??= new MistPeer(id);
             peerData.Id = id;
             peerData.Peer.Id = id;
             peerData.Position = data.Position;

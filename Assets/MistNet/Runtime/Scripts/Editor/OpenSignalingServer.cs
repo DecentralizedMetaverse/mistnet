@@ -7,7 +7,7 @@ namespace MistNet.Editor
     internal static class OpenSignalingServer
     {
         private static readonly string ParentDirectory = "MistNet";
-        private static readonly string ServerFileName = "main.py";
+        private static readonly string ServerFileName = "signaling_server.py";
             
         [MenuItem("Tools/MistNet/Open SignalingServer")]
         private static void Execute()

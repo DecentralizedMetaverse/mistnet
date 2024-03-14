@@ -13,15 +13,15 @@ namespace MyNamespace
     /// </summary>
     public class MistEvalLocation : MonoBehaviour
     {
-        private static readonly float IntervalDistanceTimeSec = 0.5f;
+        private static readonly float IntervalDistanceTimeSec = 0.95f;
         private CancellationTokenSource _cancelTokenSource = new();
 
         private Dictionary<string, object> _locationData = new()
         {
+            { "id", "" },
             { "type", "evaluation" },
             { "location", ""},
             { "connection", ""},
-            { "id", "" },
         };
         private void Start()
         {

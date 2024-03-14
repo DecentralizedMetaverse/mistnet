@@ -13,5 +13,7 @@
     "24": 0.5,
     "48": 0.5,
     "96": 0.5
-  }
+  },
+  "LatencyMilliseconds": 0,
+  "IntervalSendTableTimeSeconds": 1.5
 }

@@ -49,7 +49,8 @@ namespace MistNet
             var pong = MemoryPackSerializer.Deserialize<P_Pong>(data);
             var time = DateTime.Now.Ticks - pong.Time;
             var timeSpan = new TimeSpan(time);
-            MistDebug.Log($"[STATS][RTT][{sourceId}] {timeSpan.Milliseconds} ms");
+            var rtt = (int)timeSpan.TotalMilliseconds;
+            MistDebug.Log($"[STATS][RTT][{sourceId}] {rtt} ms");
         }
 
         private async UniTask UpdatePing(CancellationToken token = default)

@@ -33,6 +33,9 @@ class WebSocketServer:
                 await self.process_message(websocket, message)
         except ConnectionClosed:
             # クライアントが切断した場合の処理
+            pass
+        finally:
+            # Client切断時の処理
             self.remove_client(websocket)
 
     async def process_message(self, websocket, message):

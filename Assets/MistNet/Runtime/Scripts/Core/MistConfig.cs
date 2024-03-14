@@ -26,6 +26,10 @@ namespace MistNet
             { 48, 1.6f },
             { 96, 3.2f },
         };
+        // 通信遅延
+        public static int LatencyMilliseconds { get; private set; } = 0;
+        // 情報交換送信間隔時間
+        public static float IntervalSendTableTimeSeconds { get; private set; } = 1.5f; 
         
         [Serializable]
         private class MistConfigData
@@ -36,6 +40,8 @@ namespace MistNet
             public int MaxConnection;
             public string[] StunUrls;
             public Dictionary<int, float> RadiusAndSendIntervalSeconds;
+            public int LatencyMilliseconds;
+            public float IntervalSendTableTimeSeconds;
         }
 
         public void ReadConfig()
@@ -48,6 +54,8 @@ namespace MistNet
             LimitConnection = config.LimitConnection;
             MaxConnection = config.MaxConnection;
             SignalingServerAddress = config.SignalingServerAddress;
+            LatencyMilliseconds = config.LatencyMilliseconds;
+            IntervalSendTableTimeSeconds = config.IntervalSendTableTimeSeconds;
             
             if(config.StunUrls is { Length: > 0 }) StunUrls = config.StunUrls;
             if(config.RadiusAndSendIntervalSeconds != null) RadiusAndSendIntervalSeconds = config.RadiusAndSendIntervalSeconds;
@@ -63,6 +71,8 @@ namespace MistNet
                 SignalingServerAddress = SignalingServerAddress,
                 StunUrls = StunUrls,
                 RadiusAndSendIntervalSeconds = RadiusAndSendIntervalSeconds,
+                LatencyMilliseconds = LatencyMilliseconds,
+                IntervalSendTableTimeSeconds = IntervalSendTableTimeSeconds,
             };
             // 整形表示で書き込み
             var txt = JsonConvert.SerializeObject(config, Formatting.Indented);

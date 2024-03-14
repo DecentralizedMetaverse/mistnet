@@ -5,7 +5,6 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using MemoryPack;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace MistNet
 {
@@ -14,8 +13,9 @@ namespace MistNet
     /// </summary>
     public class MistConnectionOptimizer : MonoBehaviour
     {
-        private const float IntervalSendTableTimeSec = 1.5f;
-        private const int BlockConnectIntervalTimeSec = 10;
+        // private const float IntervalSendTableTimeSec = 1.5f;
+        private const float IntervalOptimizeTimeSec = 1f;
+        private const int BlockConnectIntervalTimeSec = 1;
 
         public static MistConnectionOptimizer I { get; private set; }
         private CancellationTokenSource _cancellationTokenSource;
@@ -43,10 +43,7 @@ namespace MistNet
         {
             _cancellationTokenSource.Cancel();
         }
-
-        /// <summary>
-        /// RPCハンドラを登録する
-        /// </summary>
+        
         private void RegisterRPCHandlers()
         {
             MistManager.I.AddRPC(MistNetMessageType.PeerData, OnPeerTableResponse);
@@ -112,7 +109,7 @@ namespace MistNet
         {
             while (!token.IsCancellationRequested)
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: token);
+                await UniTask.Delay(TimeSpan.FromSeconds(IntervalOptimizeTimeSec), cancellationToken: token);
                 if (MistSyncManager.I.SelfSyncObject == null) continue;
         
                 var nearbyPeers = GetNearbyPeers();
@@ -158,7 +155,6 @@ namespace MistNet
                 {
                     SendDisconnectRequest(id);
                 }
-
             }
         }
 
@@ -177,6 +173,7 @@ namespace MistNet
         private void SendConnectRequest(string id)
         {
             if (id == MistManager.I.MistPeerData.SelfId) return;
+            if (CompareId(id)) return;
             MistManager.I.Connect(id).Forget();
         }
 
@@ -187,7 +184,7 @@ namespace MistNet
         {
             while (!token.IsCancellationRequested)
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(IntervalSendTableTimeSec), cancellationToken: token);
+                await UniTask.Delay(TimeSpan.FromSeconds(MistConfig.IntervalSendTableTimeSeconds), cancellationToken: token);
                 SendPeerData().Forget();
             }
         }
