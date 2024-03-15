@@ -7,7 +7,7 @@ namespace MistNet
     /// <summary>
     /// TODO: 相手のPeerでDataChannelが開いていない？
     /// </summary>
-    public class MistPeer
+    public class MistPeer: IDisposable
     {
         private static readonly float WaitReconnectTimeSec = 3f;
         private static readonly string DataChannelLabel = "data";
@@ -164,9 +164,9 @@ namespace MistNet
             {
                 MistDebug.Log("OnDataChannel");
                 _dataChannel = channel;
-                _dataChannel.OnMessage = OnMessageDataChannel;
                 _dataChannel.OnOpen = OnOpenDataChannel;
                 _dataChannel.OnClose = OnCloseDataChannel;
+                _dataChannel.OnMessage = OnMessageDataChannel;
                 OnOpenDataChannel();
             };
         }
@@ -309,6 +309,13 @@ namespace MistNet
             await UniTask.Delay(TimeSpan.FromSeconds(WaitReconnectTimeSec));
             CreateOffer().Forget();
             MistPeerData.I.SetState(Id, MistPeerState.Connecting);
+        }
+
+        public void Dispose()
+        {
+            ForceClose();
+            Connection?.Dispose();
+            _dataChannel?.Dispose();
         }
     }
 

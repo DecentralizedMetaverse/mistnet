@@ -17,8 +17,6 @@ namespace MistNet
     {
         private static readonly float WaitConnectingTimeSec = 3f;
 
-        [SerializeField] private bool showLog;
-
         public static MistManager I;
         public MistPeerData MistPeerData;
         public Action<string> ConnectAction;
@@ -32,11 +30,6 @@ namespace MistNet
         private readonly Dictionary<string, Delegate> _functionDict = new();
         private readonly Dictionary<string, int> _functionArgsLengthDict = new();
         private readonly Dictionary<string, Type[]> _functionArgsTypeDict = new();
-
-        private void OnValidate()
-        {
-            MistDebug.ShowLog = showLog;
-        }
 
         public void Awake()
         {
@@ -264,7 +257,7 @@ namespace MistNet
             MistSyncManager.I.DestroyBySenderId(id);
             MistOptimizationManager.I?.OnDisconnected(id);
             
-            // MistPeerData.I.GetAllPeer.Remove(id);
+            MistPeerData.I.OnDisconnected(id);
             OnDisconnectedAction?.Invoke(id);
         }
 

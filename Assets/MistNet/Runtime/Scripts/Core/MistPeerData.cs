@@ -96,6 +96,16 @@ namespace MistNet
             // return peerData.State != MistPeerState.Connected;
             return true;
         }
+        
+        public void OnDisconnected(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return;
+            if (!_dict.TryGetValue(id, out var peerData)) return;
+            peerData.State = MistPeerState.Disconnected;
+            peerData.Peer?.Dispose();
+            peerData.Peer = null;
+            // _dict.Remove(id);
+        }
     }
 
     public class MistPeerDataElement

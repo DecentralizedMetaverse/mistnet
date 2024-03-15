@@ -182,6 +182,7 @@ namespace MistNet
                 {
                     var id = _connectRequests.Dequeue();
                     SendConnectRequest(id);
+                    continue;
                 }
 
                 if (_disconnectRequests.Count > 0)
@@ -217,8 +218,8 @@ namespace MistNet
             sendList.Add(selfBytes);
 
             // 周辺のピアの情報を追加
-            // var allPeers = MistPeerData.I.GetAllPeer.Values;
-            var nearbyPeers = GetNearbyPeers();
+            var nearbyPeers = MistPeerData.I.GetAllPeer.Values;
+            //var nearbyPeers = GetNearbyPeers();
             foreach (var element in nearbyPeers)
             {
                 if (!IsValidPeer(element)) continue;
