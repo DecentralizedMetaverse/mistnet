@@ -14,11 +14,14 @@ namespace MistNet
     public class MistConnectionOptimizer : MonoBehaviour
     {
         // private const float IntervalSendTableTimeSec = 1.5f;
+        private const float RequestIntervalSec = 0.5f;
         private const float IntervalOptimizeTimeSec = 1f;
         private const int BlockConnectIntervalTimeSec = 1;
 
         public static MistConnectionOptimizer I { get; private set; }
         private CancellationTokenSource _cancellationTokenSource;
+        private Queue<string> _connectRequests = new Queue<string>();
+        private Queue<string> _disconnectRequests = new Queue<string>();
 
         private void Awake()
         {
@@ -37,6 +40,9 @@ namespace MistNet
 
             // 接続の最適化を定期的に実行
             OptimizeConnections(_cancellationTokenSource.Token).Forget();
+            
+            // リクエストの処理を定期的に実行
+            ProcessRequests(_cancellationTokenSource.Token).Forget();
         }
 
         private void OnDestroy()
@@ -114,10 +120,7 @@ namespace MistNet
         
                 var nearbyPeers = GetNearbyPeers();
                 LogPeerTable(nearbyPeers);
-
-                var connectRequests = new List<string>();
-                var disconnectRequests = new List<string>();
-
+                
                 // nearbyPeers以外のピアを切断リクエストに追加
                 var allPeers = MistPeerData.I.GetAllPeer.Values;
                 foreach (var peer in allPeers)
@@ -125,10 +128,10 @@ namespace MistNet
                     if (nearbyPeers.Contains(peer)) continue;
                     var peerData = MistPeerData.I.GetPeerData(peer.Id);
         
-                    // 相手の現在の接続数が3より大きい場合のみ切断リクエストに追加
+                    // 相手の現在の接続数がある程度大きい場合のみ切断リクエストに追加
                     if (peerData.CurrentConnectNum > MistConfig.MinConnection)
                     {
-                        disconnectRequests.Add(peer.Id);
+                        _disconnectRequests.Enqueue(peer.Id);
                     }
                 }
 
@@ -140,20 +143,8 @@ namespace MistNet
                         peerData.CurrentConnectNum < peerData.MaxConnectNum &&
                         peerData.BlockConnectIntervalTime <= 0)
                     {
-                        connectRequests.Add(peer.Id);
+                        _connectRequests.Enqueue(peer.Id);
                     }
-                }
-
-                // 接続リクエストを送信
-                foreach (var id in connectRequests)
-                {
-                    SendConnectRequest(id);
-                }
-
-                // 切断リクエストを送信
-                foreach (var id in disconnectRequests)
-                {
-                    SendDisconnectRequest(id);
                 }
             }
         }
@@ -175,6 +166,30 @@ namespace MistNet
             if (id == MistManager.I.MistPeerData.SelfId) return;
             if (CompareId(id)) return;
             MistManager.I.Connect(id).Forget();
+        }
+        
+        /// <summary>
+        /// リクエストを処理する
+        /// </summary>
+        /// <param name="token"></param>
+        private async UniTaskVoid ProcessRequests(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await UniTask.Delay(TimeSpan.FromSeconds(RequestIntervalSec), cancellationToken: token);
+
+                if (_connectRequests.Count > 0)
+                {
+                    var id = _connectRequests.Dequeue();
+                    SendConnectRequest(id);
+                }
+
+                if (_disconnectRequests.Count > 0)
+                {
+                    var id = _disconnectRequests.Dequeue();
+                    SendDisconnectRequest(id);
+                }
+            }
         }
 
         /// <summary>
@@ -202,16 +217,14 @@ namespace MistNet
             sendList.Add(selfBytes);
 
             // 周辺のピアの情報を追加
-            var allPeers = MistPeerData.I.GetAllPeer.Values;
-            // var nearbyPeers = GetNearbyPeers();
-            foreach (var element in allPeers)
+            // var allPeers = MistPeerData.I.GetAllPeer.Values;
+            var nearbyPeers = GetNearbyPeers();
+            foreach (var element in nearbyPeers)
             {
-                if (IsValidPeer(element))
-                {
-                    var sendData = CreatePeerData(element);
-                    var bytes = MemoryPackSerializer.Serialize(sendData);
-                    sendList.Add(bytes);
-                }
+                if (!IsValidPeer(element)) continue;
+                var sendData = CreatePeerData(element);
+                var bytes = MemoryPackSerializer.Serialize(sendData);
+                sendList.Add(bytes);
             }
 
             // ピア情報を送信

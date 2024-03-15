@@ -218,7 +218,13 @@ namespace MistNet
                 return;
             }
 
-            if (MistStats.I != null) MistStats.I.TotalSendBytes += data.Length;
+            // 評価用
+            if (MistStats.I != null)
+            {
+                MistStats.I.TotalSendBytes += data.Length;
+                MistStats.I.TotalMessengeCount++;
+            }
+            
             _dataChannel.Send(data);
         }
 

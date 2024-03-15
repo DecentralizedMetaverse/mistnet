@@ -728,7 +728,7 @@ PrefabInstance:
     - target: {fileID: 1356439322518889549, guid: abb203be92da0fd47b5814dfd39149e6,
         type: 3}
       propertyPath: filters
-      value: STATS
+      value: MessageCount
       objectReference: {fileID: 0}
     - target: {fileID: 1356439322518889549, guid: abb203be92da0fd47b5814dfd39149e6,
         type: 3}

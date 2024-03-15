@@ -15,6 +15,7 @@ namespace MistNet
         
         public int TotalSendBytes { get; set; }
         public int TotalReceiveBytes { get; set; }
+        public int TotalMessengeCount { get; set; }
         
         private CancellationTokenSource _cancellationToken;
 
@@ -83,8 +84,12 @@ namespace MistNet
                 var receiveBps = TotalReceiveBytes * 8 / IntervalSendSizeTimeSec;
                 MistDebug.Log($"[STATS][Download] {receiveBps} bps");
                 
+                // メッセージ数
+                MistDebug.Log($"[STATS][MessageCount] {TotalMessengeCount}");
+                
                 TotalSendBytes = 0;
                 TotalReceiveBytes = 0;
+                TotalMessengeCount = 0;
                 
                 await UniTask.Delay(TimeSpan.FromSeconds(IntervalSendSizeTimeSec), cancellationToken: token);
             }
