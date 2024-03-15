@@ -193,7 +193,6 @@ namespace MistNet
 
             if (IsMessageForSelf(message))
             {
-                MistDebug.Log($"[Debug][RECV][SELF] {message.Type.ToString()}");
                 ProcessMessageForSelf(message, senderId);
                 return;
             }

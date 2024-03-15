@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.WebRTC;
 using UnityEngine;
 
 namespace MistNet
@@ -29,7 +28,7 @@ namespace MistNet
         {
             foreach (var peerData in _dict.Values)
             {
-                peerData.Peer.ForceClose();
+                peerData.Peer.Close();
             }
         }
 
@@ -60,9 +59,8 @@ namespace MistNet
             }
 
             MistDebug.Log($"[GetPeerData] {id}");
-            if (!_dict.TryGetValue(id, out var peerData)) return null;
-            peerData.Peer ??= new(id); // TODO: ここでPeerを生成しても大丈夫か
-            return peerData;
+            return _dict.GetValueOrDefault(id);
+            // peerData.Peer ??= new(id); // TODO: ここでPeerを生成しても大丈夫か
         }
 
         public void SetState(string id, MistPeerState state)
@@ -70,18 +68,21 @@ namespace MistNet
             if (string.IsNullOrEmpty(id)) return;
             if (!_dict.TryGetValue(id, out var peerData)) return;
             peerData.State = state;
-            if (state == MistPeerState.Disconnected)
+            if (state == MistPeerState.Disconnected && peerData.Peer != null)
             {
+                peerData.Peer.Dispose();
                 peerData.Peer = null;
             }
         }
 
-        public bool UpdatePeerData(string id, P_PeerData data)
+        public void UpdatePeerData(string id, P_PeerData data)
         {
-            if (string.IsNullOrEmpty(id)) return false;
+            if (string.IsNullOrEmpty(id)) return;
 
-            _dict.TryAdd(id, new MistPeerDataElement(id));
-
+            if (!_dict.ContainsKey(id))
+            {
+                _dict.Add(id, new MistPeerDataElement(id));
+            }
             
             var peerData = _dict[id];
             peerData.Peer ??= new MistPeer(id);
@@ -94,7 +95,6 @@ namespace MistNet
             peerData.MaxConnectNum = data.MaxConnectNum;
 
             // return peerData.State != MistPeerState.Connected;
-            return true;
         }
         
         public void OnDisconnected(string id)

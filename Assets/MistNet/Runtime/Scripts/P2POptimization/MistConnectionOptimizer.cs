@@ -20,8 +20,8 @@ namespace MistNet
 
         public static MistConnectionOptimizer I { get; private set; }
         private CancellationTokenSource _cancellationTokenSource;
-        private Queue<string> _connectRequests = new Queue<string>();
-        private Queue<string> _disconnectRequests = new Queue<string>();
+        private readonly Queue<string> _connectRequests = new();
+        private readonly Queue<string> _disconnectRequests = new();
 
         private void Awake()
         {
@@ -101,7 +101,7 @@ namespace MistNet
         {
             var selfPosition = MistSyncManager.I.SelfSyncObject.transform.position;
             var nearbyPeers = MistPeerData.I.GetAllPeer.Values
-                .OrderBy(x => Vector3.Distance(selfPosition, x.Position))
+                .OrderBy(x => (selfPosition - x.Position).sqrMagnitude)
                 .Take(MistConfig.LimitConnection)
                 .ToList();
 

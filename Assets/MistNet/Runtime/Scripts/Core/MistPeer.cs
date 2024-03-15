@@ -1,6 +1,7 @@
 ﻿using Cysharp.Threading.Tasks;
 using System;
 using Unity.WebRTC;
+using UnityEngine;
 
 namespace MistNet
 {
@@ -12,7 +13,7 @@ namespace MistNet
         private static readonly float WaitReconnectTimeSec = 3f;
         private static readonly string DataChannelLabel = "data";
 
-        public readonly RTCPeerConnection Connection;
+        public RTCPeerConnection Connection;
         public MistSignalingState SignalingState;
 
         public string Id;
@@ -42,7 +43,8 @@ namespace MistNet
 
             // ----------------------------
             // Candidate
-            Connection.OnIceCandidate += OnIceCandidate;
+            MistDebug.Log($"[Debug][Signaling][OnIceCandidate][A] -> {Id}");
+            Connection.OnIceCandidate = OnIceCandidate;
             Connection.OnIceConnectionChange += OnIceConnectionChange;
             Connection.OnIceGatheringStateChange += state => MistDebug.Log($"[Signaling][OnIceGatheringStateChange] {state}");
             Connection.OnNegotiationNeeded += () => MistDebug.Log($"[Signaling][OnNegotiationNeeded] -> {Id}");
@@ -230,41 +232,40 @@ namespace MistNet
 
         public void Close()
         {
+            MistDebug.Log($"[Debug] Close {Id}");
             // DataChannelを閉じる
-            _dataChannel?.Close();
+            // _dataChannel?.Close();
 
             // PeerConnectionを閉じる
             Connection.Close();
-
             SignalingState = MistSignalingState.InitialStable;
+            Connection = null;
         }
 
-        public void ForceClose()
-        {
-            // DataChannelを閉じる
-            _dataChannel?.Close();
-
-            // PeerConnectionを閉じる
-            Connection.Close();
-
-            SignalingState = MistSignalingState.InitialStable;
-        }
+        // public void ForceClose()
+        // {
+        //     // DataChannelを閉じる
+        //     _dataChannel?.Close();
+        //
+        //     // PeerConnectionを閉じる
+        //     Connection.Close();
+        //
+        //     SignalingState = MistSignalingState.InitialStable;
+        // }
 
         private void OnIceConnectionChange(RTCIceConnectionState state)
         {
-            MistDebug.Log($"[Signaling][OnIceConnectionChange] {state} -> {Id}");
+            MistDebug.Log($"[Debug][Signaling][OnIceConnectionChange] {state} -> {Id}");
 
             switch (state)
             {
                 case RTCIceConnectionState.Connected:
                     SignalingState = MistSignalingState.NegotiationCompleted;
-                    OnConnected?.Invoke(Id);
                     break;
                 case RTCIceConnectionState.Closed:
                 case RTCIceConnectionState.Disconnected:
                 case RTCIceConnectionState.Failed:
                 case RTCIceConnectionState.Max:
-                    Connection.Close();
                     SignalingState = MistSignalingState.InitialStable;
                     OnDisconnected?.Invoke(Id);
                     break;
@@ -282,14 +283,12 @@ namespace MistNet
         private void OnOpenDataChannel()
         {
             MistDebug.Log($"[Signaling][DataChannel] Open -> {Id}");
-            OnIceConnectionChange(RTCIceConnectionState.Connected); // NOTE: このメソッドが呼ばれないため、ここで強制的に呼ぶ
+            OnConnected?.Invoke(Id); // DataChannelが開いていないと、例えばInstantiateができないため、ここで呼ぶ
         }
 
         private void OnCloseDataChannel()
         {
             MistDebug.Log($"[Signaling][DataChannel] Finalize -> {Id}");
-            SignalingState = MistSignalingState.InitialStable;
-            OnIceConnectionChange(RTCIceConnectionState.Disconnected);　// NOTE: このメソッドが呼ばれないため、ここで強制的に呼ぶ
         }
 
         private void OnMessageDataChannel(byte[] data)
@@ -313,9 +312,9 @@ namespace MistNet
 
         public void Dispose()
         {
-            ForceClose();
             Connection?.Dispose();
             _dataChannel?.Dispose();
+            Connection = null;
         }
     }
 

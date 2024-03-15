@@ -12,6 +12,7 @@ namespace MistNet
         
         [SerializeField] private int maxLogLines = 10;
         [SerializeField] private string filters = "";
+        [SerializeField] private bool useConfigFilter = true;
         [SerializeField] private TMP_Text text;
 
         private string _log = "";
@@ -22,6 +23,15 @@ namespace MistNet
         private void Start()
         {
             text.text = "";
+            if (useConfigFilter)
+            {
+                if (!string.IsNullOrEmpty(MistConfig.LogFilter))
+                {
+                    filters = MistConfig.LogFilter;
+                }
+
+                maxLogLines = MistConfig.ShowLogLine;
+            }
             _filterFunctions = ParseFilters(filters);
             Application.logMessageReceived += OnLogMessageReceived;
             _path = $"{LogFilePath}/{DateTime.Now:yyyy-MM-dd-HH-mm-ss}_{MistPeerData.I.SelfId}.log";

@@ -150,13 +150,7 @@ namespace MistNet
             
             // 接続が完了したら、関連するICE候補を削除
             var peer = MistManager.I.MistPeerData.GetPeer(targetId).Connection;
-            peer.OnIceConnectionChange = state =>
-            {
-                if (state == RTCIceConnectionState.Connected || state == RTCIceConnectionState.Completed)
-                {
-                    _candidateData.RemoveWhere(c => c.Contains($"\"target_id\":\"{targetId}\""));
-                }
-            };
+            RegisterIceConnectionChangeHandler(targetId, peer);
         }
 
         public async void ReceiveCandidate(Dictionary<string, object> response)
@@ -201,6 +195,25 @@ namespace MistNet
             };
 
             return sendData;
+        }
+        
+        private void RegisterIceConnectionChangeHandler(string targetId, RTCPeerConnection peer)
+        {
+            void PeerOnIceConnectionChange(RTCIceConnectionState state)
+            {
+                if (state == RTCIceConnectionState.Connected || state == RTCIceConnectionState.Completed)
+                {
+                    _candidateData.RemoveWhere(c => c.Contains($"\"target_id\":\"{targetId}\""));
+                }
+
+                if (state == RTCIceConnectionState.Closed || state == RTCIceConnectionState.Failed || state == RTCIceConnectionState.Disconnected)
+                {
+                    // 接続が切断された場合の処理を追加
+                    peer.OnIceConnectionChange -= PeerOnIceConnectionChange;
+                }
+            }
+
+            peer.OnIceConnectionChange += PeerOnIceConnectionChange;
         }
     }
 }

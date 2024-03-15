@@ -30,7 +30,10 @@ namespace MistNet
         public static int LatencyMilliseconds { get; private set; } = 0;
         // 情報交換送信間隔時間
         public static float IntervalSendTableTimeSeconds { get; private set; } = 1.5f; 
-        public static bool DebugLog { get; set; } = true;
+        public static bool DebugLog { get; private set; } = true;
+        // 表示するLogの種類
+        public static string LogFilter { get; private set; } = "[STATS]";
+        public static int ShowLogLine { get; private set; } = 10;
         
         [Serializable]
         private class MistConfigData
@@ -44,6 +47,8 @@ namespace MistNet
             public int LatencyMilliseconds;
             public float IntervalSendTableTimeSeconds;
             public bool DebugLog;
+            public string LogFilter;
+            public int ShowLogLine;
         }
 
         public void ReadConfig()
@@ -59,6 +64,8 @@ namespace MistNet
             LatencyMilliseconds = config.LatencyMilliseconds;
             IntervalSendTableTimeSeconds = config.IntervalSendTableTimeSeconds;
             DebugLog = config.DebugLog;
+            LogFilter = config.LogFilter;
+            ShowLogLine = config.ShowLogLine;
             
             if(config.StunUrls is { Length: > 0 }) StunUrls = config.StunUrls;
             if(config.RadiusAndSendIntervalSeconds != null) RadiusAndSendIntervalSeconds = config.RadiusAndSendIntervalSeconds;
@@ -77,6 +84,8 @@ namespace MistNet
                 LatencyMilliseconds = LatencyMilliseconds,
                 IntervalSendTableTimeSeconds = IntervalSendTableTimeSeconds,
                 DebugLog = DebugLog,
+                LogFilter = LogFilter,
+                ShowLogLine = ShowLogLine,
             };
             // 整形表示で書き込み
             var txt = JsonConvert.SerializeObject(config, Formatting.Indented);
