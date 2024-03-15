@@ -166,6 +166,7 @@ namespace MistNet
         {
             if (id == MistManager.I.MistPeerData.SelfId) return;
             if (CompareId(id)) return;
+            MistDebug.Log($"[Info][*] Connect Request {id}");
             MistManager.I.Connect(id).Forget();
         }
         
@@ -180,7 +181,6 @@ namespace MistNet
                 if (_connectRequests.Count > 0)
                 {
                     var id = _connectRequests.Dequeue();
-                    MistDebug.Log($"[Info][*] Connect Request {id}");
                     SendConnectRequest(id);
                 }
                 

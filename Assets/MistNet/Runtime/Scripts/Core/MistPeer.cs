@@ -205,6 +205,13 @@ namespace MistNet
                 await UniTask.WaitUntil(() => _dataChannel is { ReadyState: RTCDataChannelState.Open });
             }
             
+            // _dataChannelがCloseのとき
+            if (_dataChannel == null)
+            {
+                MistDebug.LogWarning($"[Signaling][Send] DataChannel is null -> {Id}");
+                return;
+            }
+            
             switch (_dataChannel)
             {
                 case { ReadyState: RTCDataChannelState.Closed }:
@@ -213,13 +220,6 @@ namespace MistNet
                     return;
             }
             
-            // _dataChannelがCloseのとき
-            if (_dataChannel == null)
-            {
-                MistDebug.LogWarning($"[Signaling][Send] DataChannel is null -> {Id}");
-                return;
-            }
-
             // 評価用
             if (MistStats.I != null)
             {

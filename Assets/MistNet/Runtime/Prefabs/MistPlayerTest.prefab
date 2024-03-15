@@ -76,7 +76,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   syncObject: {fileID: 1998646823194181299}
-  maxSpeed: 1
+  maxSpeed: 0.03333334
   yFixed: 1
 --- !u!114 &2156153193105701224
 MonoBehaviour:
