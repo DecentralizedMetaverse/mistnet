@@ -144,6 +144,7 @@ namespace MistNet
                         peerData.BlockConnectIntervalTime <= 0)
                     {
                         _connectRequests.Enqueue(peer.Id);
+                        MistDebug.Log($"[Info] Connect Request {peer.Id}");
                     }
                 }
             }
@@ -176,14 +177,14 @@ namespace MistNet
         {
             while (!token.IsCancellationRequested)
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(RequestIntervalSec), cancellationToken: token);
-
                 if (_connectRequests.Count > 0)
                 {
                     var id = _connectRequests.Dequeue();
+                    MistDebug.Log($"[Info][*] Connect Request {id}");
                     SendConnectRequest(id);
-                    continue;
                 }
+                
+                await UniTask.Delay(TimeSpan.FromSeconds(RequestIntervalSec), cancellationToken: token);
 
                 if (_disconnectRequests.Count > 0)
                 {

@@ -10,8 +10,6 @@ namespace MistNet
     {
         public Action<Dictionary<string, object>, string> Send;
         private readonly HashSet<string> _candidateData = new();
-        private readonly HashSet<string> _processedOffers = new();
-        private readonly HashSet<string> _sentOffers = new();
 
         public void SendSignalingRequest()
         {
@@ -35,12 +33,6 @@ namespace MistNet
         /// <returns></returns>
         public async UniTask SendOffer(string targetId)
         {
-            if (_sentOffers.Contains(targetId))
-            {
-                MistDebug.Log($"[MistSignaling] Offer already sent to: {targetId}");
-                return;
-            }
-
             MistDebug.Log($"[MistSignaling] SendOffer: {targetId}");
             var peer = MistManager.I.MistPeerData.GetPeer(targetId);
             peer.OnCandidate = ice => SendCandidate(ice, targetId);
@@ -52,7 +44,7 @@ namespace MistNet
             sendData.Add("target_id", targetId);
 
             Send(sendData, targetId);
-            _sentOffers.Add(targetId);
+            // _sentOffers.Add(targetId);
         }
 
         /// <summary>
@@ -87,11 +79,11 @@ namespace MistNet
         {
             var targetId = response["id"].ToString();
 
-            if (_processedOffers.Contains(targetId))
-            {
-                MistDebug.LogWarning($"[MistSignaling] Offer already processed from: {targetId}");
-                return;
-            }
+            // if (_processedOffers.Contains(targetId))
+            // {
+            //     MistDebug.LogWarning($"[MistSignaling] Offer already processed from: {targetId}");
+            //     return;
+            // }
 
             var peer = MistManager.I.MistPeerData.GetPeer(targetId);
             if (peer.SignalingState == MistSignalingState.NegotiationCompleted) return;
@@ -101,7 +93,7 @@ namespace MistNet
             MistDebug.Log($"[MistSignaling][SignalingState] {peer.Connection.SignalingState}");
             var sdp = JsonUtility.FromJson<RTCSessionDescription>(response["sdp"].ToString());
             SendAnswer(peer, sdp, targetId).Forget();
-            _processedOffers.Add(targetId);
+            // _processedOffers.Add(targetId);
         }
 
         /// <summary>
@@ -128,8 +120,8 @@ namespace MistNet
             }
             
             // 接続が完了したら、関連するオファーを削除
-            _processedOffers.Remove(targetId);
-            _sentOffers.Remove(targetId);
+            // _processedOffers.Remove(targetId);
+            // _sentOffers.Remove(targetId);
         }
 
         private void SendCandidate(Ice candidate, string targetId = "")
