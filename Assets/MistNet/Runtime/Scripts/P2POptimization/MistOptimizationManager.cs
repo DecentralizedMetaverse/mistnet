@@ -15,11 +15,11 @@ namespace MistNet
         private void Awake()
         {
             I = this;
-            Data = new MistOptimizationData();
         }
 
         private void Start()
         {
+            Data = new MistOptimizationData();
             _cancelTokenSource = new();
             UpdateCalculateDistance(_cancelTokenSource.Token).Forget();
         }

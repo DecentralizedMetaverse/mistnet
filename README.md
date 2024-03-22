@@ -14,6 +14,7 @@ https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/cd4a1d95-3422-
 - パーシャルメッシュ型P2Pで接続を行います
 - 中央となるサーバーが存在しません
 - 通信にはWebRTCを使用します
+- 仮想空間の座標に基づいて接続先が自動的に決定されます
 
 # 導入方法
 UPM Package
