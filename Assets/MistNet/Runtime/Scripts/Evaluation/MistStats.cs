@@ -15,6 +15,7 @@ namespace MistNet
         
         public int TotalSendBytes { get; set; }
         public int TotalReceiveBytes { get; set; }
+        public int TotalMessengeCount { get; set; }
         
         private CancellationTokenSource _cancellationToken;
 
@@ -49,7 +50,8 @@ namespace MistNet
             var pong = MemoryPackSerializer.Deserialize<P_Pong>(data);
             var time = DateTime.Now.Ticks - pong.Time;
             var timeSpan = new TimeSpan(time);
-            MistDebug.Log($"[STATS][RTT][{sourceId}] {timeSpan.Milliseconds} ms");
+            var rtt = (int)timeSpan.TotalMilliseconds;
+            MistDebug.Log($"[STATS][RTT][{sourceId}] {rtt} ms");
         }
 
         private async UniTask UpdatePing(CancellationToken token = default)
@@ -71,6 +73,10 @@ namespace MistNet
         {
             while (!token.IsCancellationRequested)
             {
+                // 現在の接続人数を調べる
+                var peers = MistPeerData.I.GetConnectedPeer;
+                MistDebug.Log($"[STATS][Peers] {peers.Count}/{MistConfig.LimitConnection}/{MistConfig.MaxConnection}");
+                
                 // 帯域幅(bps)を計算
                 var sendBps = TotalSendBytes * 8 / IntervalSendSizeTimeSec;
                 MistDebug.Log($"[STATS][Upload] {sendBps} bps");
@@ -78,12 +84,12 @@ namespace MistNet
                 var receiveBps = TotalReceiveBytes * 8 / IntervalSendSizeTimeSec;
                 MistDebug.Log($"[STATS][Download] {receiveBps} bps");
                 
+                // メッセージ数
+                MistDebug.Log($"[STATS][MessageCount] {TotalMessengeCount}");
+                
                 TotalSendBytes = 0;
                 TotalReceiveBytes = 0;
-                
-                // 現在の接続人数を調べる
-                var peers = MistPeerData.I.GetConnectedPeer;
-                MistDebug.Log($"[STATS][Peers] {peers.Count}/{MistConfig.LimitConnection}/{MistConfig.MaxConnection}");
+                TotalMessengeCount = 0;
                 
                 await UniTask.Delay(TimeSpan.FromSeconds(IntervalSendSizeTimeSec), cancellationToken: token);
             }

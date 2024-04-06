@@ -8,6 +8,9 @@ namespace MistNet
 {
     public class MistSignalingWebSocket : MonoBehaviour
     {
+        public static MistSignalingWebSocket I;
+        public WebSocket Ws => _ws;
+        
         private Dictionary<string, Action<Dictionary<string, object>>> _functions;
         private WebSocket _ws;
         private MistSignaling _mistSignaling;
@@ -15,6 +18,7 @@ namespace MistNet
 
         private void Start()
         {
+            I = this;
             _messageQueue.Clear();
             _mistSignaling = new MistSignaling();
             _mistSignaling.Send += Send;

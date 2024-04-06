@@ -103,12 +103,42 @@ namespace MistNet
                 RegisterRPCMethods(methodsWithAttribute, component);
 
 
+                // 各Componentで定義されているPropertyを取得し、Attributeが付与されたプロパティを検索
                 var propertyInfos = component.GetType()
                     .GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                     .Where(prop => Attribute.IsDefined(prop, typeof(MistSyncAttribute))).ToList();
 
                 RegisterSyncProperties(propertyInfos, component);
+
+                // 各Componentで定義されているInterfaceを取得
+                var interfaces = component.GetType().GetInterfaces();
+                RegisterCallback(interfaces, component);
             }
+        }
+
+        private static void RegisterCallback(Type[] interfaces, Component component)
+        {
+            if (interfaces.Contains(typeof(IMistJoined)))
+            {
+                var method = component.GetType().GetMethod("OnJoined",
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (method != null)
+                {
+                    var delegateInstance = Delegate.CreateDelegate(Expression.GetActionType(new[] { typeof(string) }), component, method);
+                    MistManager.I.AddJoinedCallback((Action<string>)delegateInstance);
+                }
+            }    
+            
+            if (interfaces.Contains(typeof(IMistLeft)))
+            {
+                var method = component.GetType().GetMethod("OnLeft",
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (method != null)
+                {
+                    var delegateInstance = Delegate.CreateDelegate(Expression.GetActionType(new[] { typeof(string) }), component, method);
+                    MistManager.I.AddLeftCallback((Action<string>)delegateInstance);
+                }
+            }    
         }
 
         /// <summary>
@@ -132,7 +162,7 @@ namespace MistNet
                 var delegateInstance = Delegate.CreateDelegate(delegateType, component, methodInfo);
                 var keyName = $"{Id}_{delegateInstance.Method.Name}";
                 _rpcList.Add(keyName);
-                
+
                 var argTypesWithoutMessageInfo = argTypes.Where(t => t != typeof(MessageInfo)).ToArray();
                 MistManager.I.AddRPC(keyName, delegateInstance, argTypesWithoutMessageInfo);
             }

@@ -77,3 +77,6 @@ crashlytics-build.properties
 # End of https://www.toptal.com/developers/gitignore/api/unity
 MistNet/logs/
 MistNetLog.log
+.idea/
+MistNet/evaluation.json
+Assets/Samples/

@@ -16,6 +16,8 @@ messages:
         type: Vector3
       - name: Rotation
         type: Vector3
+      - name: Velocity
+        type: Vector3
       - name: Time
         type: float
 
@@ -98,7 +100,8 @@ messages:
       - name: Time
         type: long       
         
-  - name: PropertyRequest            
+  - name: PropertyRequest     
+  - name: LeaderNotify    
         
   - name: Error
     fields:

@@ -15,11 +15,11 @@ namespace MistNet
         private void Awake()
         {
             I = this;
-            Data = new MistOptimizationData();
         }
 
         private void Start()
         {
+            Data = new MistOptimizationData();
             _cancelTokenSource = new();
             UpdateCalculateDistance(_cancelTokenSource.Token).Forget();
         }
@@ -32,6 +32,7 @@ namespace MistNet
         public void OnDisconnected(string id)
         {
             Data.RemovePeer(id);
+            MistConnectionOptimizer.I.OnDisconnected(id);
         }
         
         /// <summary>

@@ -64,7 +64,7 @@ namespace MistNet
             _sendData.Position = transform.position;
             _sendData.Rotation = transform.rotation.eulerAngles;
             
-            if (_syncObject.IsPlayerObject)
+            if (_syncObject.IsPlayerObject && MistSendingOptimizer.I != null)
             {
                 MistSendingOptimizer.I.SendLocationData = _sendData;
                 return;
@@ -83,7 +83,7 @@ namespace MistNet
             _receivedPosition = location.Position;
             _receivedRotation = Quaternion.Euler(location.Rotation);
             _syncIntervalTimeSecond = location.Time;
-            MistDebug.Log($"[{location.ObjId}] Time: {_syncIntervalTimeSecond}");
+            // MistDebug.Log($"[{location.ObjId}] Time: {_syncIntervalTimeSecond}");
             _elapsedTime = 0f;
         }
 

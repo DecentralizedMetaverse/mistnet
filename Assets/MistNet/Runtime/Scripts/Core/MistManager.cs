@@ -17,30 +17,26 @@ namespace MistNet
     {
         private static readonly float WaitConnectingTimeSec = 3f;
 
-        [SerializeField] private bool showLog = false;
-
         public static MistManager I;
         public MistPeerData MistPeerData;
         public Action<string> ConnectAction;
+        public Action<string> OnConnectedAction;
+        public Action<string> OnDisconnectedAction;
+        
 
-        private readonly MistRoutingTable _routingTable = new();
+        public readonly MistRoutingTable RoutingTable = new();
         private readonly MistConfig _config = new();
         private readonly Dictionary<MistNetMessageType, Action<byte[], string>> _onMessageDict = new();
         private readonly Dictionary<string, Delegate> _functionDict = new();
         private readonly Dictionary<string, int> _functionArgsLengthDict = new();
         private readonly Dictionary<string, Type[]> _functionArgsTypeDict = new();
 
-        private void OnValidate()
-        {
-            MistDebug.ShowLog = showLog;
-        }
-
         public void Awake()
         {
+            _config.ReadConfig();
             MistPeerData = new();
             MistPeerData.Init();
             I = this;
-            _config.ReadConfig();
         }
 
         private void Start()
@@ -51,7 +47,6 @@ namespace MistNet
         public void OnDestroy()
         {
             MistPeerData.AllForceClose();
-            _config.WriteConfig();
         }
 
         public void Send(MistNetMessageType type, byte[] data, string targetId)
@@ -69,7 +64,7 @@ namespace MistNet
 
             if (!MistPeerData.IsConnected(targetId))
             {
-                targetId = _routingTable.Get(targetId);
+                targetId = RoutingTable.Get(targetId);
                 MistDebug.Log($"[SEND][FORWARD] {targetId} -> {message.TargetId}");
             }
 
@@ -197,7 +192,6 @@ namespace MistNet
 
             if (IsMessageForSelf(message))
             {
-                MistDebug.Log($"[Debug][RECV][SELF] {message.Type.ToString()}");
                 ProcessMessageForSelf(message, senderId);
                 return;
             }
@@ -205,7 +199,7 @@ namespace MistNet
             var targetId = message.TargetId;
             if (!MistPeerData.IsConnected(message.TargetId))
             {
-                targetId = _routingTable.Get(message.TargetId);
+                targetId = RoutingTable.Get(message.TargetId);
             }
 
             if (!string.IsNullOrEmpty(targetId))
@@ -225,7 +219,7 @@ namespace MistNet
 
         private void ProcessMessageForSelf(MistMessage message, string senderId)
         {
-            _routingTable.Add(message.Id, senderId);
+            RoutingTable.Add(message.Id, senderId);
             _onMessageDict[message.Type].DynamicInvoke(message.Data, message.Id);
         }
 
@@ -233,7 +227,9 @@ namespace MistNet
         {
             ConnectAction.Invoke(id);
             MistPeerData.GetPeerData(id).State = MistPeerState.Connecting;
+            
             await UniTask.Delay(TimeSpan.FromSeconds(WaitConnectingTimeSec));
+            
             if (MistPeerData.GetPeerData(id).State == MistPeerState.Connecting)
             {
                 MistDebug.Log($"[Connect] {id} is not connected");
@@ -248,7 +244,8 @@ namespace MistNet
             // InstantiateしたObject情報の送信
             MistPeerData.I.GetPeerData(id).State = MistPeerState.Connected;
             MistSyncManager.I.SendObjectInstantiateInfo(id);
-            MistOptimizationManager.I.OnConnected(id);
+            MistOptimizationManager.I?.OnConnected(id);
+            OnConnectedAction?.Invoke(id);
         }
 
         public void OnDisconnected(string id)
@@ -256,10 +253,10 @@ namespace MistNet
             MistDebug.Log($"[Disconnected] {id}");
             // MistPeerData.Dict.Remove(id);
             MistSyncManager.I.DestroyBySenderId(id);
-            MistOptimizationManager.I.OnDisconnected(id);
-
-            MistPeerData.I.GetPeerData(id).State = MistPeerState.Disconnected;
-            MistPeerData.I.GetAllPeer.Remove(id);
+            MistOptimizationManager.I?.OnDisconnected(id);
+            
+            MistPeerData.I.OnDisconnected(id);
+            OnDisconnectedAction?.Invoke(id);
         }
 
         public void Disconnect(string id)
@@ -267,6 +264,16 @@ namespace MistNet
             var peer = MistPeerData.GetPeer(id);
             peer.Close();
             OnDisconnected(id);
+        }
+        
+        public void AddJoinedCallback(Delegate callback)
+        {
+            OnConnectedAction += (Action<string>)callback;
+        }
+        
+        public void AddLeftCallback(Delegate callback)
+        {
+            OnDisconnectedAction += (Action<string>)callback;
         }
 
         /// <summary>
