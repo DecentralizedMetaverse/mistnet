@@ -9,9 +9,9 @@ namespace MistNet
     public class MistSyncManager : MonoBehaviour
     {
         public static MistSyncManager I { get; private set; }
-        public MistSyncObject SelfSyncObject { get; set; }                  // 自身のSyncObject
+        public MistSyncObject SelfSyncObject { get; set; }                           // 自身のSyncObject
         public readonly Dictionary<string, MistSyncObject> MySyncObjects = new();    // 自身が生成したObject一覧
-        public readonly Dictionary<string, string> OwnerIdAndObjIdDict = new();      // ownerId, objId
+        public readonly Dictionary<string, List<string>> OwnerIdAndObjIdDict = new();      // ownerId, objId
         private readonly Dictionary<string, MistSyncObject> _syncObjects = new();    // objId, MistSyncObject
         private readonly Dictionary<string, MistAnimator> _syncAnimators = new();    // objId, MistAnimator
 
@@ -89,7 +89,13 @@ namespace MistNet
                 MistManager.I.Send(MistNetMessageType.PropertyRequest, bytes, syncObject.OwnerId);
             }
 
-            OwnerIdAndObjIdDict.Add(syncObject.OwnerId, syncObject.Id);
+            // OwnerIdAndObjIdDictに登録
+            if (!OwnerIdAndObjIdDict.ContainsKey(syncObject.OwnerId))
+            {
+                OwnerIdAndObjIdDict[syncObject.OwnerId] = new List<string>();
+            }
+            OwnerIdAndObjIdDict[syncObject.OwnerId].Add(syncObject.Id);
+
             RegisterSyncAnimator(syncObject);
         }
 
@@ -140,8 +146,11 @@ namespace MistNet
             }
 
             var objId = OwnerIdAndObjIdDict[senderId];
-            Destroy(_syncObjects[objId].gameObject);
-            _syncObjects.Remove(objId);
+            foreach (var id in objId)
+            {
+                Destroy(_syncObjects[id].gameObject);
+                _syncObjects.Remove(id);
+            }
 
             OwnerIdAndObjIdDict.Remove(senderId);
         }

@@ -40,7 +40,7 @@ namespace MistNet
                 if (peer == null) continue;
 
                 if (!MistSyncManager.I.OwnerIdAndObjIdDict.TryGetValue(id, out var targetId)) continue;
-                var targetObj = MistSyncManager.I.GetSyncObject(targetId);
+                var targetObj = MistSyncManager.I.GetSyncObject(targetId[0]); // NOTE: 0番目としているが、これは最初に登録されるのがPlayerObjectであると想定しているため
 
                 var selfObj = MistSyncManager.I.SelfSyncObject;
 
