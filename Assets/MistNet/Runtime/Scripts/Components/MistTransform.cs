@@ -37,6 +37,17 @@ namespace MistNet
 
         private void Update()
         {
+            if (_syncObject.IsGlobalObject)
+            {
+                UpdateAndSendLocation();
+                InterpolationLocation();
+
+                // 受信時に座標が変わるため、その際の相手への送信を防ぐ
+                _previousPosition = transform.position;
+                _previousRotation = transform.rotation;
+                return;
+            }
+
             if (_syncObject.IsOwner)
             {
                 UpdateAndSendLocation();

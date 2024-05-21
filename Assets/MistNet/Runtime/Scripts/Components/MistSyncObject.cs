@@ -16,6 +16,7 @@ namespace MistNet
         public string OwnerId { get; private set; }
         public bool IsOwner { get; private set; } = true;
         public bool IsPlayerObject { get; set; }
+        public bool IsGlobalObject { get; set; } //合意Objectかどうか (全員が扱うことができるObjectかどうか)
         [HideInInspector] public MistTransform MistTransform;
         [SerializeField] private float syncIntervalSeconds = 0.5f;
 
@@ -23,16 +24,32 @@ namespace MistNet
         private readonly List<(Component, PropertyInfo)> _propertyList = new();
         private readonly Dictionary<string, object> _propertyValueDict = new();
         private CancellationTokenSource _tokenSource;
+        private static int _instanceIdCount;
 
         private void Awake()
         {
+            Debug.Log($"[Debug] MistSyncObject Awake {gameObject.name}");
             gameObject.TryGetComponent(out MistTransform);
         }
 
         private void Start()
         {
+            Debug.Log($"[Debug] MistSyncObject Start {gameObject.name}");
+
+            // 既にScene上に配置されたObjectである場合
+            if (string.IsNullOrEmpty(Id))
+            {
+                // 自動合意Objectに設定する　どのNodeが変更しても、自動で合意をとって同期する
+                var instanceId = _instanceIdCount++.ToString();
+                Id = instanceId;
+                IsOwner = false;
+                IsGlobalObject = true;
+                OwnerId = instanceId; // TODO: ここをどうするか検討中である
+                MistSyncManager.I.RegisterSyncObject(this);
+            }
+
             _tokenSource = new();
-            Register();
+            RegisterPropertyAndRPC();
             if (IsOwner) WatchPropertiesAsync(_tokenSource.Token).Forget();
         }
 
@@ -51,6 +68,7 @@ namespace MistNet
 
         public void SetData(string id, bool isOwner, string prefabAddress, string ownerId)
         {
+            Debug.Log($"[Debug] SetData {id}, {isOwner}, {prefabAddress}, {ownerId}");
             Id = id;
             IsOwner = isOwner;
             PrefabAddress = prefabAddress;
@@ -88,7 +106,7 @@ namespace MistNet
             }
         }
 
-        private void Register()
+        private void RegisterPropertyAndRPC()
         {
             // 子階層を含むすべてのComponentsを取得
             var components = gameObject.GetComponentsInChildren<Component>();
