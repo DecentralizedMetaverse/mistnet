@@ -130,7 +130,7 @@ namespace MistNet
             Send(MistNetMessageType.RPC, bytes, targetId);
         }
 
-        public void RPCAll(string key, params object[] args)
+        public void RPCOther(string key, params object[] args)
         {
             var argsString = string.Join(",", args);
             var sendData = new P_RPC
@@ -142,9 +142,9 @@ namespace MistNet
             SendAll(MistNetMessageType.RPC, bytes);
         }
 
-        public void RPCAllWithSelf(string key, params object[] args)
+        public void RPCAll(string key, params object[] args)
         {
-            RPCAll(key, args);
+            RPCOther(key, args);
             _functionDict[key].DynamicInvoke(args);
         }
 

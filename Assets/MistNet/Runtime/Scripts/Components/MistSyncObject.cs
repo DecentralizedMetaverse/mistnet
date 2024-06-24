@@ -16,7 +16,7 @@ namespace MistNet
         public string OwnerId { get; private set; }
         public bool IsOwner { get; private set; } = true;
         public bool IsPlayerObject { get; set; }
-        public bool IsGlobalObject { get; set; } //合意Objectかどうか (全員が扱うことができるObjectかどうか)
+        public bool IsGlobalObject { get; private set; } //合意Objectかどうか (全員が扱うことができるObjectかどうか)
         [HideInInspector] public MistTransform MistTransform;
         [SerializeField] private float syncIntervalSeconds = 0.5f;
 
@@ -39,18 +39,24 @@ namespace MistNet
             // 既にScene上に配置されたObjectである場合
             if (string.IsNullOrEmpty(Id))
             {
-                // 自動合意Objectに設定する　どのNodeが変更しても、自動で合意をとって同期する
-                var instanceId = _instanceIdCount++.ToString();
-                Id = instanceId;
-                IsOwner = false;
-                IsGlobalObject = true;
-                OwnerId = instanceId; // TODO: ここをどうするか検討中である
-                MistSyncManager.I.RegisterSyncObject(this);
+                SetGlobalObject();
             }
 
             _tokenSource = new();
             RegisterPropertyAndRPC();
             if (IsOwner) WatchPropertiesAsync(_tokenSource.Token).Forget();
+        }
+
+        private void SetGlobalObject()
+        {
+            Debug.Log($"[Debug] SetGlobalObject {gameObject.name}");
+            // 自動合意Objectに設定する　どのNodeが変更しても、自動で合意をとって同期する
+            var instanceId = _instanceIdCount++.ToString();
+            Id = instanceId;
+            IsOwner = false;
+            IsGlobalObject = true;
+            OwnerId = MistPeerData.I.SelfId; // 自身のIDをOwnerとして設定しておく
+            MistSyncManager.I.RegisterSyncObject(this);
         }
 
         private void OnDestroy()
@@ -84,16 +90,16 @@ namespace MistNet
             MistManager.I.RPC(targetId, keyName, args);
         }
 
+        public void RPCOther(string key, params object[] args)
+        {
+            var keyName = $"{Id}_{key}";
+            MistManager.I.RPCOther(keyName, args);
+        }
+
         public void RPCAll(string key, params object[] args)
         {
             var keyName = $"{Id}_{key}";
             MistManager.I.RPCAll(keyName, args);
-        }
-
-        public void RPCAllWithSelf(string key, params object[] args)
-        {
-            var keyName = $"{Id}_{key}";
-            MistManager.I.RPCAllWithSelf(keyName, args);
         }
 
         public void SendAllProperties(string id)
@@ -246,7 +252,7 @@ namespace MistNet
                     _propertyValueDict[keyName] = value;
 
                     MistDebug.Log($"Property: {property.Name}, Value: {value}");
-                    MistManager.I.RPCAll(keyName, value);
+                    MistManager.I.RPCOther(keyName, value);
                 }
 
                 await UniTask.Delay(TimeSpan.FromSeconds(syncIntervalSeconds), cancellationToken: token);

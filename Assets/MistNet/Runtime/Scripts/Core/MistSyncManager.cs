@@ -81,7 +81,11 @@ namespace MistNet
                 
                 MySyncObjects.Add(syncObject.Id, syncObject);
             }
-            else if (!syncObject.IsGlobalObject)
+            else if (syncObject.IsGlobalObject)
+            {
+                // 誰のものでもないGlobalObjectの場合
+            }
+            else
             {
                 // 自身以外のSyncObjectの登録
                 var sendData = new P_PropertyRequest();
