@@ -202,6 +202,8 @@ namespace MistNet
 
             if (SignalingState == MistSignalingState.NegotiationInProgress)
             {
+                // TODO: Queueに変更する
+                Debug.Log("[Debug] Send Waiting...");
                 await UniTask.WaitUntil(() => _dataChannel is { ReadyState: RTCDataChannelState.Open });
             }
             

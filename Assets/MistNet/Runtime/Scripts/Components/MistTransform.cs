@@ -88,6 +88,7 @@ namespace MistNet
             }
 
             if (_syncObject.IsGlobalObject) Debug.Log($"[Transform][Send] {_sendData.ObjId}");
+            if (_syncIntervalTimeSecond == 0) _syncIntervalTimeSecond = 0.1f;
             _sendData.Time = _syncIntervalTimeSecond;
             var bytes = MemoryPackSerializer.Serialize(_sendData);
             MistManager.I.SendAll(MistNetMessageType.Location, bytes);
@@ -96,9 +97,9 @@ namespace MistNet
         public void ReceiveLocation(P_Location location)
         {
             if (_syncObject == null) return;
-            if (!_syncObject.IsGlobalObject && _syncObject.IsOwner) return;
+            if (_syncObject.IsOwner) return;
 
-            if (_syncObject.IsGlobalObject) Debug.Log($"[Transform][Receive] {location.ObjId}");
+            if (_syncObject.IsGlobalObject) Debug.Log($"[Transform][Receive] {location.ObjId} {location.Position}");
             _receivedPosition = location.Position;
             _receivedRotation = Quaternion.Euler(location.Rotation);
             _syncIntervalTimeSecond = location.Time;

@@ -22,7 +22,6 @@ namespace MistNet
         public Action<string> ConnectAction;
         public Action<string> OnConnectedAction;
         public Action<string> OnDisconnectedAction;
-        
 
         public readonly MistRoutingTable RoutingTable = new();
         private readonly MistConfig _config = new();
