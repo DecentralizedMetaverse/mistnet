@@ -44,7 +44,7 @@ namespace MyNamespace
 
                 _locationData["id"] = MistPeerData.I.SelfId;
                 
-                var connection = MistConnectionOptimizer.I.GetConnectionInfo();
+                var connection = MistConnectionOptimizer.I != null ? MistConnectionOptimizer.I.GetConnectionInfo(): "";
                 var position = MistSyncManager.I.SelfSyncObject.transform.position;
                 var positionStr = $"{position.x},{position.y},{position.z}";
                 _locationData["location"] = positionStr;
