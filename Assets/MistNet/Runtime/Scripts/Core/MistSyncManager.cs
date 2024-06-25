@@ -10,10 +10,13 @@ namespace MistNet
     {
         public static MistSyncManager I { get; private set; }
         public MistSyncObject SelfSyncObject { get; set; }                           // 自身のSyncObject
-        public readonly Dictionary<string, MistSyncObject> MySyncObjects = new();    // 自身が生成したObject一覧
-        public readonly Dictionary<string, List<string>> OwnerIdAndObjIdDict = new();      // ownerId, objId
+
         private readonly Dictionary<string, MistSyncObject> _syncObjects = new();    // objId, MistSyncObject
         private readonly Dictionary<string, MistAnimator> _syncAnimators = new();    // objId, MistAnimator
+
+        // ユーザーが退出した際のGameObjectの削除に使用している Instantiateで生成されたObjectに限る
+        public readonly Dictionary<string, List<string>> OwnerIdAndObjIdDict = new();  // ownerId, objId　
+        private readonly Dictionary<string, MistSyncObject> _mySyncObjects = new();    // 自身が生成したObject一覧
 
         private void Awake()
         {
@@ -32,7 +35,7 @@ namespace MistNet
         public void SendObjectInstantiateInfo(string id)
         {
             var sendData = new P_ObjectInstantiate();
-            foreach (var obj in MySyncObjects.Values)
+            foreach (var obj in _mySyncObjects.Values)
             {
                 sendData.ObjId = obj.Id;
                 var objTransform = obj.transform;
@@ -77,9 +80,15 @@ namespace MistNet
             if (syncObject.IsOwner)
             {
                 // 最初のGameObjectは、接続先最適化に使用するため、PlayerObjectであることを設定
-                if(MySyncObjects.Count == 0) syncObject.IsPlayerObject = true;
+                if(_mySyncObjects.Count == 0) syncObject.IsPlayerObject = true;
                 
-                MySyncObjects.Add(syncObject.Id, syncObject);
+                _mySyncObjects.Add(syncObject.Id, syncObject);
+            }
+            else if (syncObject.IsGlobalObject)
+            {
+                // 誰のものでもないGlobalObjectの場合
+                RegisterSyncAnimator(syncObject);
+                return; // OwnerIdAndObjIdDictに登録する必要がないのでここで中断
             }
             else
             {
@@ -89,7 +98,7 @@ namespace MistNet
                 MistManager.I.Send(MistNetMessageType.PropertyRequest, bytes, syncObject.OwnerId);
             }
 
-            // OwnerIdAndObjIdDictに登録
+            // OwnerIdAndObjIdDictに登録 自動削除で使用する
             if (!OwnerIdAndObjIdDict.ContainsKey(syncObject.OwnerId))
             {
                 OwnerIdAndObjIdDict[syncObject.OwnerId] = new List<string>();
@@ -101,7 +110,7 @@ namespace MistNet
 
         private void SendAllProperties(string id)
         {
-            foreach (var obj in MySyncObjects.Values)
+            foreach (var obj in _mySyncObjects.Values)
             {
                 obj.SendAllProperties(id);
             }
@@ -116,9 +125,9 @@ namespace MistNet
             }
 
             _syncObjects.Remove(syncObject.Id);
-            if (MySyncObjects.ContainsKey(syncObject.Id))
+            if (_mySyncObjects.ContainsKey(syncObject.Id))
             {
-                MySyncObjects.Remove(syncObject.Id);
+                _mySyncObjects.Remove(syncObject.Id);
             }
 
             OwnerIdAndObjIdDict.Remove(syncObject.OwnerId);

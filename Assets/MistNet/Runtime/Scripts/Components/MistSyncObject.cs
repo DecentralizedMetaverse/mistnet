@@ -14,8 +14,33 @@ namespace MistNet
         public string Id { get; private set; }
         public string PrefabAddress { get; private set; }
         public string OwnerId { get; private set; }
-        public bool IsOwner { get; private set; } = true;
+        [SerializeField] private bool _isOwner = true; // 表示用
+
+        public bool IsOwner
+        {
+            // TODO: Test
+            get => _isOwner;
+            private set
+            {
+                _isOwner = value;
+
+                if (IsOwner)
+                {
+                    // 後からOwnerになった際を考慮している
+                    if (_tokenSource != null) return;
+                    _tokenSource = new CancellationTokenSource();
+                    WatchPropertiesAsync(_tokenSource.Token).Forget();
+                }
+                else
+                {
+                    _tokenSource?.Cancel();
+                    _tokenSource = null;
+                }
+            }
+        }
+
         public bool IsPlayerObject { get; set; }
+        public bool IsGlobalObject { get; private set; } //合意Objectかどうか (全員が扱うことができるObjectかどうか)
         [HideInInspector] public MistTransform MistTransform;
         [SerializeField] private float syncIntervalSeconds = 0.5f;
 
@@ -23,22 +48,44 @@ namespace MistNet
         private readonly List<(Component, PropertyInfo)> _propertyList = new();
         private readonly Dictionary<string, object> _propertyValueDict = new();
         private CancellationTokenSource _tokenSource;
+        private static int _instanceIdCount;
 
         private void Awake()
         {
+            Debug.Log($"[Debug] MistSyncObject Awake {gameObject.name}");
             gameObject.TryGetComponent(out MistTransform);
         }
 
         private void Start()
         {
-            _tokenSource = new();
-            Register();
-            if (IsOwner) WatchPropertiesAsync(_tokenSource.Token).Forget();
+            Debug.Log($"[Debug] MistSyncObject Start {gameObject.name}");
+
+            // 既にScene上に配置されたObjectである場合
+            if (string.IsNullOrEmpty(Id))
+            {
+                SetGlobalObject();
+            }
+
+            RegisterPropertyAndRPC();
+
+            if (IsGlobalObject) RequestOwner().Forget();
+        }
+
+        private void SetGlobalObject()
+        {
+            Debug.Log($"[Debug] SetGlobalObject {gameObject.name}");
+            // 自動合意Objectに設定する　どのNodeが変更しても、自動で合意をとって同期する
+            var instanceId = _instanceIdCount++.ToString();
+            Id = instanceId;
+            IsOwner = false;
+            IsGlobalObject = true;
+            // OwnerId = MistPeerData.I.SelfId; // 自身のIDをOwnerとして設定しておく
+            MistSyncManager.I.RegisterSyncObject(this);
         }
 
         private void OnDestroy()
         {
-            _tokenSource.Cancel();
+            _tokenSource?.Cancel();
 
             foreach (var rpc in _rpcList)
             {
@@ -46,11 +93,13 @@ namespace MistNet
             }
 
             if (IsOwner) return;
+            if (IsGlobalObject) return;
             MistSyncManager.I.UnregisterSyncObject(this);
         }
 
         public void SetData(string id, bool isOwner, string prefabAddress, string ownerId)
         {
+            Debug.Log($"[Debug] SetData {id}, {isOwner}, {prefabAddress}, {ownerId}");
             Id = id;
             IsOwner = isOwner;
             PrefabAddress = prefabAddress;
@@ -60,35 +109,102 @@ namespace MistNet
             if (IsOwner) MistSyncManager.I.SelfSyncObject = this;
         }
 
+        private int _ownerRequestCount;
+        private bool _receiveAnswer = false;
+
+        /// <summary>
+        /// 既にSceneにあるObject用である
+        /// TODO: Ownerが切断された場合、次に誰がOwnerになるかを決定する必要がある
+        /// </summary>
+        public async UniTask RequestOwner()
+        {
+            if (IsOwner) return;
+            _receiveAnswer = false;
+            _ownerRequestCount++;
+            do
+            {
+                RPCOther(nameof(RequestOwner), MistPeerData.I.SelfId, _ownerRequestCount);
+                await UniTask.Delay(TimeSpan.FromSeconds(1));
+            } while (!_receiveAnswer);
+        }
+
+        // TODO: 要検証
+        // TODO: 後から入出する人はRPCが実行されない
+        [MistRpc]
+        private void RequestOwner(string id, int ownerRequestCount)
+        {
+            Debug.Log($"[Debug][0] RequestOwner {id}, {ownerRequestCount}");
+            const int threshold = 100;
+            if (ownerRequestCount == int.MinValue && _ownerRequestCount > int.MaxValue - threshold)
+            {
+                // オーバーフローを考慮
+            }
+            else if (ownerRequestCount < _ownerRequestCount)
+            {
+                // 新しいリクエストカウントが現在のカウントより小さい場合は無視 つまり誰かがOwnerになっているということ
+                RPC(id, nameof(OnReceiveOwnerRequestCount), _ownerRequestCount, OwnerId);
+                return;
+            }
+
+            OwnerId = id;
+            IsOwner = false;
+            _ownerRequestCount = ownerRequestCount;
+            RPC(id, nameof(OnChangedOwner));
+        }
+
+        [MistRpc]
+        public void OnReceiveOwnerRequestCount(int count, string ownerId)
+        {
+            Debug.Log($"[Debug][0] OnReceiveOwnerRequestCount {count}");
+            _ownerRequestCount = count;
+            OwnerId = ownerId;
+            IsOwner = false;
+            _receiveAnswer = true;
+        }
+
+        [MistRpc]
+        private void OnChangedOwner()
+        {
+            Debug.Log($"[Debug][0] OnChangedOwner {OwnerId}");
+            OwnerId = Id;
+            IsOwner = true;
+            _receiveAnswer = true;
+        }
+
+        // -------------------
+
         public void RPC(string targetId, string key, params object[] args)
         {
-            var keyName = $"{Id}_{key}";
-            MistManager.I.RPC(targetId, keyName, args);
+            MistManager.I.RPC(targetId, GetRPCName(key), args);
+        }
+
+        public void RPCOther(string key, params object[] args)
+        {
+            MistManager.I.RPCOther(GetRPCName(key), args);
         }
 
         public void RPCAll(string key, params object[] args)
         {
-            var keyName = $"{Id}_{key}";
-            MistManager.I.RPCAll(keyName, args);
+            MistManager.I.RPCAll(GetRPCName(key), args);
         }
 
-        public void RPCAllWithSelf(string key, params object[] args)
+        private string GetRPCName(string methodName)
         {
-            var keyName = $"{Id}_{key}";
-            MistManager.I.RPCAllWithSelf(keyName, args);
+            return $"{Id}_{methodName}";
         }
+
+        // -------------------
 
         public void SendAllProperties(string id)
         {
             foreach (var (component, property) in _propertyList)
             {
-                var keyName = $"{Id}_{property.Name}";
                 var value = property.GetValue(component);
-                MistManager.I.RPC(id, keyName, value);
+                MistManager.I.RPC(id, GetRPCName(property.Name), value);
             }
         }
 
-        private void Register()
+        private void RegisterPropertyAndRPC()
         {
             // 子階層を含むすべてのComponentsを取得
             var components = gameObject.GetComponentsInChildren<Component>();
@@ -124,21 +240,23 @@ namespace MistNet
                     BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                 if (method != null)
                 {
-                    var delegateInstance = Delegate.CreateDelegate(Expression.GetActionType(new[] { typeof(string) }), component, method);
+                    var delegateInstance = Delegate.CreateDelegate(Expression.GetActionType(new[] { typeof(string) }),
+                        component, method);
                     MistManager.I.AddJoinedCallback((Action<string>)delegateInstance);
                 }
-            }    
-            
+            }
+
             if (interfaces.Contains(typeof(IMistLeft)))
             {
                 var method = component.GetType().GetMethod("OnLeft",
                     BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                 if (method != null)
                 {
-                    var delegateInstance = Delegate.CreateDelegate(Expression.GetActionType(new[] { typeof(string) }), component, method);
+                    var delegateInstance = Delegate.CreateDelegate(Expression.GetActionType(new[] { typeof(string) }),
+                        component, method);
                     MistManager.I.AddLeftCallback((Action<string>)delegateInstance);
                 }
-            }    
+            }
         }
 
         /// <summary>
@@ -160,7 +278,7 @@ namespace MistNet
                     : Expression.GetFuncType(argTypes.Concat(new[] { methodInfo.ReturnType }).ToArray());
 
                 var delegateInstance = Delegate.CreateDelegate(delegateType, component, methodInfo);
-                var keyName = $"{Id}_{delegateInstance.Method.Name}";
+                var keyName = GetRPCName(delegateInstance.Method.Name);
                 _rpcList.Add(keyName);
 
                 var argTypesWithoutMessageInfo = argTypes.Where(t => t != typeof(MessageInfo)).ToArray();
@@ -228,7 +346,7 @@ namespace MistNet
                     _propertyValueDict[keyName] = value;
 
                     MistDebug.Log($"Property: {property.Name}, Value: {value}");
-                    MistManager.I.RPCAll(keyName, value);
+                    MistManager.I.RPCOther(keyName, value);
                 }
 
                 await UniTask.Delay(TimeSpan.FromSeconds(syncIntervalSeconds), cancellationToken: token);

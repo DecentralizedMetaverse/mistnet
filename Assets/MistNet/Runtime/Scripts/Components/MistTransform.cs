@@ -1,3 +1,4 @@
+using Cysharp.Threading.Tasks;
 using MemoryPack;
 using UnityEngine;
 
@@ -18,25 +19,41 @@ namespace MistNet
         private Quaternion _receivedRotation = Quaternion.identity;
         private float _elapsedTime;
 
-        private void Start()
+        private async void Start()
         {
-            _syncObject = GetComponent<MistSyncObject>();
+            await UniTask.Yield(); // MistSyncObjectの初期化を待つ
 
-            if (!_syncObject.IsOwner)
-            {
-                _syncIntervalTimeSecond = 0; // まだ受信していないので、同期しない
-                return;
-            }
+            _syncObject = GetComponent<MistSyncObject>();
 
             _sendData = new()
             {
                 ObjId = _syncObject.Id,
                 Time = _syncIntervalTimeSecond
             };
+
+            if (!_syncObject.IsOwner)
+            {
+                _syncIntervalTimeSecond = 0; // まだ受信していないので、同期しない
+                return;
+            }
         }
 
         private void Update()
         {
+            if (_sendData == null) return; // 初期化が終わっていない場合は、処理しない
+
+            // if (_syncObject.IsGlobalObject)
+            // {
+            //     Debug.Log($"[Transform][Update] {_sendData.ObjId}");
+            //     UpdateAndSendLocation();
+            //     InterpolationLocation();
+            //
+            //     // 受信時に座標が変わるため、その際の相手への送信を防ぐ
+            //     _previousPosition = transform.position;
+            //     _previousRotation = transform.rotation;
+            //     return;
+            // }
+
             if (_syncObject.IsOwner)
             {
                 UpdateAndSendLocation();
@@ -69,7 +86,9 @@ namespace MistNet
                 MistSendingOptimizer.I.SendLocationData = _sendData;
                 return;
             }
-            
+
+            if (_syncObject.IsGlobalObject) Debug.Log($"[Transform][Send] {_sendData.ObjId}");
+            if (_syncIntervalTimeSecond == 0) _syncIntervalTimeSecond = 0.1f;
             _sendData.Time = _syncIntervalTimeSecond;
             var bytes = MemoryPackSerializer.Serialize(_sendData);
             MistManager.I.SendAll(MistNetMessageType.Location, bytes);
@@ -80,6 +99,7 @@ namespace MistNet
             if (_syncObject == null) return;
             if (_syncObject.IsOwner) return;
 
+            if (_syncObject.IsGlobalObject) Debug.Log($"[Transform][Receive] {location.ObjId} {location.Position}");
             _receivedPosition = location.Position;
             _receivedRotation = Quaternion.Euler(location.Rotation);
             _syncIntervalTimeSecond = location.Time;
