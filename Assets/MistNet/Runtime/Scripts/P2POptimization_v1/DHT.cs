@@ -3,23 +3,23 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using System.Numerics;
+using System.Linq;
 
-/// <summary>
-/// Kademlia Distributed Hash Table
-/// </summary>
 public class DHT
 {
     public const int IDLength = 20;
-    private byte[] id;
+    private readonly byte[] id;
 
     public DHT(byte[] id)
     {
+        if (id.Length != IDLength)
+            throw new ArgumentException($"ID must be {IDLength} bytes long", nameof(id));
         this.id = id;
     }
 
     public DHT(string data)
     {
-        using SHA1 sha1 = SHA1.Create();
+        using var sha1 = SHA1.Create();
         id = sha1.ComputeHash(Encoding.UTF8.GetBytes(data));
     }
 
@@ -30,43 +30,36 @@ public class DHT
 
     public BigInteger Xor(DHT other)
     {
-        var distance = new BigInteger(id);
-        var otherInt = new BigInteger(other.id);
-        return distance ^ otherInt;
+        return new BigInteger(id.Zip(other.id, (a, b) => (byte)(a ^ b)).ToArray());
     }
 
-    public int BitLength()
-    {
-        return this.id.Length * 8;
-    }
+    public int BitLength() => id.Length * 8;
 
-    public byte[] ToByteArray()
-    {
-        return this.id;
-    }
+    public byte[] ToByteArray() => id;
 }
 
 public class Contact
 {
-    public DHT ID { get; set; }
-    public string Address { get; set; }
+    public DHT ID { get; }
+    public string Address { get; }
 
     public Contact(DHT id, string address)
     {
-        ID = id;
-        Address = address;
+        ID = id ?? throw new ArgumentNullException(nameof(id));
+        Address = address ?? throw new ArgumentNullException(nameof(address));
     }
 }
 
 public class RoutingTable
 {
-    public Contact Self { get; private set; }
-    public List<Contact>[] Buckets { get; private set; }
+    public Contact Self { get; }
+    public List<Contact>[] Buckets { get; }
+    public const int K = 20; // Kademlia parameter: max number of contacts per bucket
     private readonly object _lockObj = new object();
 
     public RoutingTable(Contact self)
     {
-        Self = self;
+        Self = self ?? throw new ArgumentNullException(nameof(self));
         Buckets = new List<Contact>[DHT.IDLength * 8];
         for (var i = 0; i < Buckets.Length; i++)
         {
@@ -76,17 +69,38 @@ public class RoutingTable
 
     public void AddContact(Contact contact)
     {
+        if (contact.ID.Equals(Self.ID)) return; // Don't add self
+
         lock (_lockObj)
         {
             var bucketIndex = BucketIndex(contact.ID);
-            Buckets[bucketIndex].Add(contact);
+            var bucket = Buckets[bucketIndex];
+
+            var existingContact = bucket.FirstOrDefault(c => c.ID.Equals(contact.ID));
+            if (existingContact != null)
+            {
+                bucket.Remove(existingContact);
+                bucket.Insert(0, contact); // Move to front (most recently seen)
+            }
+            else if (bucket.Count < K)
+            {
+                bucket.Insert(0, contact);
+            }
+            else
+            {
+                // Bucket is full, consider replacing least-recently seen
+                // In a real implementation, you'd ping the least-recently seen contact
+                // and only replace it if it doesn't respond
+                bucket.RemoveAt(bucket.Count - 1);
+                bucket.Insert(0, contact);
+            }
         }
     }
 
     public int BucketIndex(DHT id)
     {
         var distance = Self.ID.Xor(id);
-        return distance.GetBitLength() - 1;
+        return DHT.IDLength * 8 - 1 - distance.GetBitLength();
     }
 }
 
@@ -117,15 +131,27 @@ public class Kademlia
             var id = new DHT(key);
             return _dataStore.TryGetValue(id, out var value)
                 ? (value, true)
-                : (null, false);
+                : (Array.Empty<byte>(), false);
         }
     }
 
-    public List<Contact> FindNode(DHT id)
+    public List<Contact> FindNode(DHT target)
     {
-        var bucketIndex = _routingTable.BucketIndex(id);
-        Console.WriteLine("Bucket index: " + bucketIndex);
-        return _routingTable.Buckets[bucketIndex];
+        var closestNodes = new SortedList<BigInteger, Contact>();
+
+        foreach (var bucket in _routingTable.Buckets)
+        {
+            foreach (var contact in bucket)
+            {
+                var distance = contact.ID.Xor(target);
+                closestNodes.Add(distance, contact);
+
+                if (closestNodes.Count > RoutingTable.K)
+                    closestNodes.RemoveAt(closestNodes.Count - 1);
+            }
+        }
+
+        return closestNodes.Values.ToList();
     }
 }
 
@@ -133,13 +159,6 @@ public static class BigIntegerExtensions
 {
     public static int GetBitLength(this BigInteger value)
     {
-        var bitLength = 0;
-        while (value > 0)
-        {
-            bitLength++;
-            value >>= 1;
-        }
-
-        return bitLength;
+        return value == 0 ? 1 : (int)BigInteger.Log(BigInteger.Abs(value), 2) + 1;
     }
 }

@@ -1,18 +1,22 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class OptLayer : MonoBehaviour
 {
-    // Start is called before the first frame update
+    [ContextMenu("RunOptLayer")]
     void Start()
     {
-        
-    }
+        var nodeId = new DHT("node1");
+        var node = new Contact(nodeId, "127.0.0.1:5000");
 
-    // Update is called once per frame
-    void Update()
-    {
-        
+        var kademlia = new Kademlia(node);
+        kademlia.Store("(1,1,1)", "nodeA");
+        kademlia.Store("(2,2,2)", "nodeB");
+
+        var (val, found) = kademlia.FindValue("(1,1,1)");
+        Debug.Log($"val: {val}, found: {found}");
+
+        (val, found) = kademlia.FindValue("nodeA");
+        Debug.Log($"val: {val}, found: {found}");
+
     }
 }
