@@ -52,7 +52,14 @@ messages:
   - name: ObjectChange
     fields:
       - name: ObjId
-        type: string      
+        type: string
+
+  - name: Dht
+    fields:
+      - name: Type
+        type: string
+      - name: Data
+        type: string
 
   - name: Signaling
     fields:

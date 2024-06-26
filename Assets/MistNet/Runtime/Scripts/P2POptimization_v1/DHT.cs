@@ -112,12 +112,6 @@ public class RoutingTable
     }
 }
 
-/// <summary>
-/// - PING
-/// - STORE(key,value)
-/// - FIND_NODE(key)
-/// - FIND_VALUE(key)
-/// </summary>
 public class Kademlia
 {
     private const bool DebugLatency = false;
@@ -125,10 +119,56 @@ public class Kademlia
     public readonly RoutingTable RoutingTable;
     private readonly Dictionary<NodeId, byte[]> _dataStore = new();
 
+    // 送信用アクションデリゲート
+    public Action<Node> SendPing { get; set; }
+    public Action<Node, string, string> SendStore { get; set; }
+    public Action<Node, NodeId> SendFindNode { get; set; }
+    public Action<Node, string> SendFindValue { get; set; }
+
     public Kademlia(Node self)
     {
         _self = self;
         RoutingTable = new RoutingTable(self);
+    }
+
+    // 受信メソッド（public メソッド）
+    public bool ReceivePing(Node sender)
+    {
+        RoutingTable.AddNode(sender);
+        return true;
+    }
+
+    public void ReceiveStore(Node sender, string key, string value)
+    {
+        var keyId = new NodeId(key);
+        _dataStore[keyId] = Encoding.UTF8.GetBytes(value);
+        RoutingTable.AddNode(sender);
+    }
+
+    public List<Node> ReceiveFindNode(Node sender, NodeId targetId)
+    {
+        RoutingTable.AddNode(sender);
+        return RoutingTable.GetClosestNodes(targetId, RoutingTable.K);
+    }
+
+    public (byte[] value, bool found) ReceiveFindValue(Node sender, string key)
+    {
+        RoutingTable.AddNode(sender);
+        var keyId = new NodeId(key);
+        if (_dataStore.TryGetValue(keyId, out var value))
+        {
+            return (value, true);
+        }
+        return (Array.Empty<byte>(), false);
+    }
+
+    // 内部処理メソッド
+    public async UniTask<bool> PingAsync(Node node)
+    {
+        if (DebugLatency) await SimulateNetworkDelay();
+        SendPing?.Invoke(node);
+        // 実際のネットワーク実装では、ここでノードからの応答を待つ必要があります
+        return true; // 仮の戻り値
     }
 
     public async UniTask<bool> StoreAsync(string key, string value)
@@ -139,34 +179,10 @@ public class Kademlia
         foreach (var node in nodes)
         {
             if (DebugLatency) await SimulateNetworkDelay();
-            // 実際のネットワーク実装では、ここでノードにデータを送信する
-            _dataStore[keyId] = Encoding.UTF8.GetBytes(value);
+            SendStore?.Invoke(node, key, value);
         }
 
         return true;
-    }
-
-    public async UniTask<(byte[] value, bool found)> FindValueAsync(string key)
-    {
-        var keyId = new NodeId(key);
-
-        if (_dataStore.TryGetValue(keyId, out var localValue))
-        {
-            return (localValue, true);
-        }
-
-        var nodes = await FindNodeAsync(keyId);
-        foreach (var node in nodes)
-        {
-            if (DebugLatency) await SimulateNetworkDelay();
-            // 実際のネットワーク実装では、ここで各ノードに問い合わせる
-            if (_dataStore.TryGetValue(keyId, out var value))
-            {
-                return (value, true);
-            }
-        }
-
-        return (Array.Empty<byte>(), false);
     }
 
     public async UniTask<List<Node>> FindNodeAsync(NodeId targetId)
@@ -181,8 +197,9 @@ public class Kademlia
             if (queried.Contains(node.Id)) continue;
 
             if (DebugLatency) await SimulateNetworkDelay();
+            SendFindNode?.Invoke(node, targetId);
 
-            // 実際のネットワーク実装では、ここでノードに問い合わせる
+            // 実際のネットワーク実装では、ここでノードからの応答を待つ必要があります
             var newNodes = RoutingTable.GetClosestNodes(targetId, RoutingTable.K);
 
             foreach (var newNode in newNodes)
@@ -202,6 +219,26 @@ public class Kademlia
         }
 
         return closestNodes;
+    }
+
+    public async UniTask<(byte[] value, bool found)> FindValueAsync(string key)
+    {
+        var keyId = new NodeId(key);
+
+        if (_dataStore.TryGetValue(keyId, out var localValue))
+        {
+            return (localValue, true);
+        }
+
+        var nodes = await FindNodeAsync(keyId);
+        foreach (var node in nodes)
+        {
+            if (DebugLatency) await SimulateNetworkDelay();
+            SendFindValue?.Invoke(node, key);
+            // 実際のネットワーク実装では、ここで各ノードからの応答を待つ必要があります
+        }
+
+        return (Array.Empty<byte>(), false);
     }
 
     private async UniTask SimulateNetworkDelay()

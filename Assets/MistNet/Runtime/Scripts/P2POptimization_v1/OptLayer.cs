@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using MemoryPack;
 using UnityEngine;
 
 namespace MistNet.Opt
@@ -12,6 +13,7 @@ namespace MistNet.Opt
         private const float UpdateTimeSec = 3.0f;
         public static OptLayer I { get; private set; }
 
+        private Dictionary<string, Node> _nodes = new();
         private Kademlia _kademlia;
 
         // 同じChunkに属するノードのIDを保存する
@@ -30,7 +32,88 @@ namespace MistNet.Opt
             OnConnected(MistPeerData.I.SelfId);
             MistManager.I.OnConnectedAction += OnConnected;
             UpdateGetChunk(this.GetCancellationTokenOnDestroy()).Forget();
+            _kademlia.SendPing += SendPing;
+            _kademlia.SendStore += SendStore;
+            _kademlia.SendFindNode += SendFindNode;
+            _kademlia.SendFindValue += SendFindValue;
+            MistManager.I.AddRPC(MistNetMessageType.Dht, ReceiveDht);
         }
+
+        private void OnDestroy()
+        {
+            MistManager.I.OnConnectedAction -= OnConnected;
+            _kademlia.SendPing -= SendPing;
+            _kademlia.SendStore -= SendStore;
+            _kademlia.SendFindNode -= SendFindNode;
+            _kademlia.SendFindValue -= SendFindValue;
+        }
+
+        private void ReceiveDht(byte[] data, string id)
+        {
+            var receiveData = MemoryPackSerializer.Deserialize<P_Dht>(data);
+            switch (receiveData.Type)
+            {
+                case "Ping":
+                    _kademlia.ReceivePing(GetNode(id));
+                    break;
+                case "Store":
+                    var str  = receiveData.Data.Split('|');
+                    _kademlia.ReceiveStore(GetNode(id), str[0], str[1]);
+                    break;
+                case "FindNode":
+                    _kademlia.ReceiveFindNode(GetNode(id), new NodeId(receiveData.Data));
+                    break;
+                case "FindValue":
+                    _kademlia.ReceiveFindValue(GetNode(id), receiveData.Data);
+                    break;
+            }
+        }
+
+        private void SendPing(Node node)
+        {
+            var sendData = new P_Dht
+            {
+                Type = "Ping",
+                Data = ""
+            };
+            var bytes = MemoryPackSerializer.Serialize(sendData);
+            MistManager.I.Send(MistNetMessageType.Dht, bytes, node.Address);
+        }
+
+        private void SendStore(Node node, string key, string value)
+        {
+            var sendData = new P_Dht
+            {
+                Type = "Store",
+                Data = $"{key}|{value}"
+            };
+            var bytes = MemoryPackSerializer.Serialize(sendData);
+            MistManager.I.Send(MistNetMessageType.Dht, bytes, node.Address);
+        }
+
+        private void SendFindNode(Node node, NodeId nodeId)
+        {
+            var sendData = new P_Dht
+            {
+                Type = "FindNode",
+                Data = $"{nodeId.ToString()}"
+            };
+            var bytes = MemoryPackSerializer.Serialize(sendData);
+            MistManager.I.Send(MistNetMessageType.Dht, bytes, node.Address);
+        }
+
+        private void SendFindValue(Node node, string value)
+        {
+            var sendData = new P_Dht
+            {
+                Type = "FindValue",
+                Data = $"{value}"
+            };
+            var bytes = MemoryPackSerializer.Serialize(sendData);
+            MistManager.I.Send(MistNetMessageType.Dht, bytes, node.Address);
+        }
+
+        // --------------------
 
         /// <summary>
         /// 定期的にChunkデータを取得する
@@ -52,11 +135,6 @@ namespace MistNet.Opt
                     MistManager.I.Connect(nodeId).Forget();
                 }
             }
-        }
-
-        private void OnDestroy()
-        {
-            MistManager.I.OnConnectedAction -= OnConnected;
         }
 
         // --------------------
@@ -108,6 +186,17 @@ namespace MistNet.Opt
         private string ChunkToString((int, int, int) chunk)
         {
             return $"{chunk.Item1},{chunk.Item2},{chunk.Item3}";
+        }
+
+        // --------------------
+
+        private Node GetNode(string id)
+        {
+            if (!_nodes.TryGetValue(id, out var node))
+            {
+                _nodes.Add(id, new Node(new NodeId(id), id));
+            }
+            return _nodes[id];
         }
     }
 }
