@@ -13,7 +13,8 @@ namespace MistNet.Opt
         private const float UpdateTimeSec = 3.0f;
         public static OptLayer I { get; private set; }
 
-        private Dictionary<string, Node> _nodes = new();
+        private readonly Dictionary<string, Node> _nodes = new();
+        private readonly Dictionary<string, NodeId> _nodeIds = new();
         private Kademlia _kademlia;
 
         // 同じChunkに属するノードのIDを保存する
@@ -61,7 +62,7 @@ namespace MistNet.Opt
                     _kademlia.ReceiveStore(GetNode(id), str[0], str[1]);
                     break;
                 case "FindNode":
-                    _kademlia.ReceiveFindNode(GetNode(id), new NodeId(receiveData.Data));
+                    _kademlia.ReceiveFindNode(GetNode(id), GetNodeId(receiveData.Data));
                     break;
                 case "FindValue":
                     _kademlia.ReceiveFindValue(GetNode(id), receiveData.Data);
@@ -197,6 +198,15 @@ namespace MistNet.Opt
                 _nodes.Add(id, new Node(new NodeId(id), id));
             }
             return _nodes[id];
+        }
+
+        private NodeId GetNodeId(string id)
+        {
+            if (!_nodeIds.TryGetValue(id, out var nodeId))
+            {
+                _nodeIds.Add(id, new NodeId(id));
+            }
+            return _nodeIds[id];
         }
     }
 }
