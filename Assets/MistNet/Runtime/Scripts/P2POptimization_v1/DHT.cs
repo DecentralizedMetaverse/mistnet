@@ -4,154 +4,209 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Numerics;
 using System.Linq;
+using Cysharp.Threading.Tasks;
 
-public class DHT
+public class NodeId
 {
-    public const int IDLength = 20;
-    private readonly byte[] id;
+    public const int LENGTH = 20; // 160ビット
+    private readonly byte[] _id;
 
-    public DHT(byte[] id)
+    public NodeId(byte[] id)
     {
-        if (id.Length != IDLength)
-            throw new ArgumentException($"ID must be {IDLength} bytes long", nameof(id));
-        this.id = id;
+        if (id.Length != LENGTH)
+            throw new ArgumentException($"ID must be {LENGTH} bytes long", nameof(id));
+        _id = id;
     }
 
-    public DHT(string data)
+    public NodeId(string data)
     {
         using var sha1 = SHA1.Create();
-        id = sha1.ComputeHash(Encoding.UTF8.GetBytes(data));
+        _id = sha1.ComputeHash(Encoding.UTF8.GetBytes(data));
     }
 
-    public override string ToString()
+    public BigInteger Distance(NodeId other) => new BigInteger(_id.Zip(other._id, (a, b) => (byte)(a ^ b)).ToArray());
+
+    public override string ToString() => BitConverter.ToString(_id).Replace("-", "").ToLower();
+
+    public byte[] ToByteArray() => _id;
+    public override bool Equals(object obj)
     {
-        return BitConverter.ToString(id).Replace("-", "").ToLower();
+        if (obj is NodeId other)
+        {
+            return _id.SequenceEqual(other._id);
+        }
+        return false;
     }
 
-    public BigInteger Xor(DHT other)
+    public override int GetHashCode()
     {
-        return new BigInteger(id.Zip(other.id, (a, b) => (byte)(a ^ b)).ToArray());
+        return BitConverter.ToInt32(_id, 0);
     }
-
-    public int BitLength() => id.Length * 8;
-
-    public byte[] ToByteArray() => id;
 }
 
-public class Contact
+public class Node
 {
-    public DHT ID { get; }
+    public NodeId Id { get; }
     public string Address { get; }
 
-    public Contact(DHT id, string address)
+    public Node(NodeId id, string address)
     {
-        ID = id ?? throw new ArgumentNullException(nameof(id));
+        Id = id ?? throw new ArgumentNullException(nameof(id));
         Address = address ?? throw new ArgumentNullException(nameof(address));
     }
 }
 
 public class RoutingTable
 {
-    public Contact Self { get; }
-    public List<Contact>[] Buckets { get; }
-    public const int K = 20; // Kademlia parameter: max number of contacts per bucket
-    private readonly object _lockObj = new object();
+    public const int K = 20; // Kademliaパラメータ: バケットあたりの最大ノード数
+    private readonly Node _self;
+    private readonly List<Node>[] _buckets;
 
-    public RoutingTable(Contact self)
+    public RoutingTable(Node self)
     {
-        Self = self ?? throw new ArgumentNullException(nameof(self));
-        Buckets = new List<Contact>[DHT.IDLength * 8];
-        for (var i = 0; i < Buckets.Length; i++)
-        {
-            Buckets[i] = new List<Contact>();
-        }
+        _self = self ?? throw new ArgumentNullException(nameof(self));
+        _buckets = Enumerable.Range(0, NodeId.LENGTH * 8).Select(_ => new List<Node>()).ToArray();
     }
 
-    public void AddContact(Contact contact)
+    public void AddNode(Node node)
     {
-        if (contact.ID.Equals(Self.ID)) return; // Don't add self
+        if (node.Id.Equals(_self.Id)) return;
 
-        lock (_lockObj)
+        var bucketIndex = GetBucketIndex(_self.Id.Distance(node.Id));
+        var bucket = _buckets[bucketIndex];
+
+        lock (bucket)
         {
-            var bucketIndex = BucketIndex(contact.ID);
-            var bucket = Buckets[bucketIndex];
-
-            var existingContact = bucket.FirstOrDefault(c => c.ID.Equals(contact.ID));
-            if (existingContact != null)
+            var existingNode = bucket.FirstOrDefault(n => n.Id.Equals(node.Id));
+            if (existingNode != null)
             {
-                bucket.Remove(existingContact);
-                bucket.Insert(0, contact); // Move to front (most recently seen)
+                bucket.Remove(existingNode);
+                bucket.Insert(0, node);
             }
             else if (bucket.Count < K)
             {
-                bucket.Insert(0, contact);
+                bucket.Insert(0, node);
             }
             else
             {
-                // Bucket is full, consider replacing least-recently seen
-                // In a real implementation, you'd ping the least-recently seen contact
-                // and only replace it if it doesn't respond
+                // バケットが満杯の場合、最後のノードをpingして応答がなければ置き換える
+                // 実際の実装では、非同期でpingを行い、応答に基づいて処理する
                 bucket.RemoveAt(bucket.Count - 1);
-                bucket.Insert(0, contact);
+                bucket.Insert(0, node);
             }
         }
     }
 
-    public int BucketIndex(DHT id)
+    public List<Node> GetClosestNodes(NodeId targetId, int count)
     {
-        var distance = Self.ID.Xor(id);
-        return DHT.IDLength * 8 - 1 - distance.GetBitLength();
+        var allNodes = _buckets.SelectMany(b => b).ToList();
+        return allNodes
+            .OrderBy(n => n.Id.Distance(targetId))
+            .Take(count)
+            .ToList();
+    }
+
+    private static int GetBucketIndex(BigInteger distance)
+    {
+        return distance == 0 ? 0 : NodeId.LENGTH * 8 - distance.GetBitLength();
     }
 }
 
+/// <summary>
+/// - PING
+/// - STORE(key,value)
+/// - FIND_NODE(key)
+/// - FIND_VALUE(key)
+/// </summary>
 public class Kademlia
 {
-    private readonly RoutingTable _routingTable;
-    private readonly Dictionary<DHT, byte[]> _dataStore = new();
-    private readonly object _lockObj = new();
+    private const bool DebugLatency = false;
+    private readonly Node _self;
+    public readonly RoutingTable RoutingTable;
+    private readonly Dictionary<NodeId, byte[]> _dataStore = new();
 
-    public Kademlia(Contact self)
+    public Kademlia(Node self)
     {
-        _routingTable = new RoutingTable(self);
+        _self = self;
+        RoutingTable = new RoutingTable(self);
     }
 
-    public void Store(string key, string value)
+    public async UniTask<bool> StoreAsync(string key, string value)
     {
-        lock (_lockObj)
+        var keyId = new NodeId(key);
+        var nodes = RoutingTable.GetClosestNodes(keyId, RoutingTable.K);
+
+        foreach (var node in nodes)
         {
-            var id = new DHT(key);
-            _dataStore[id] = Encoding.UTF8.GetBytes(value);
+            if (DebugLatency) await SimulateNetworkDelay();
+            // 実際のネットワーク実装では、ここでノードにデータを送信する
+            _dataStore[keyId] = Encoding.UTF8.GetBytes(value);
         }
+
+        return true;
     }
 
-    public (byte[] value, bool found) FindValue(string key)
+    public async UniTask<(byte[] value, bool found)> FindValueAsync(string key)
     {
-        lock (_lockObj)
+        var keyId = new NodeId(key);
+
+        if (_dataStore.TryGetValue(keyId, out var localValue))
         {
-            var id = new DHT(key);
-            return _dataStore.TryGetValue(id, out var value)
-                ? (value, true)
-                : (Array.Empty<byte>(), false);
+            return (localValue, true);
         }
-    }
 
-    public List<Contact> FindNode(DHT target)
-    {
-        var closestNodes = new SortedList<BigInteger, Contact>();
-
-        foreach (var bucket in _routingTable.Buckets)
+        var nodes = await FindNodeAsync(keyId);
+        foreach (var node in nodes)
         {
-            foreach (var contact in bucket)
+            if (DebugLatency) await SimulateNetworkDelay();
+            // 実際のネットワーク実装では、ここで各ノードに問い合わせる
+            if (_dataStore.TryGetValue(keyId, out var value))
             {
-                var distance = contact.ID.Xor(target);
-                closestNodes.Add(distance, contact);
-
-                if (closestNodes.Count > RoutingTable.K)
-                    closestNodes.RemoveAt(closestNodes.Count - 1);
+                return (value, true);
             }
         }
 
-        return closestNodes.Values.ToList();
+        return (Array.Empty<byte>(), false);
+    }
+
+    public async UniTask<List<Node>> FindNodeAsync(NodeId targetId)
+    {
+        var closestNodes = RoutingTable.GetClosestNodes(targetId, RoutingTable.K);
+        var queried = new HashSet<NodeId>();
+        var toQuery = new Queue<Node>(closestNodes);
+
+        while (toQuery.Count > 0)
+        {
+            var node = toQuery.Dequeue();
+            if (queried.Contains(node.Id)) continue;
+
+            if (DebugLatency) await SimulateNetworkDelay();
+
+            // 実際のネットワーク実装では、ここでノードに問い合わせる
+            var newNodes = RoutingTable.GetClosestNodes(targetId, RoutingTable.K);
+
+            foreach (var newNode in newNodes)
+            {
+                if (!queried.Contains(newNode.Id))
+                {
+                    toQuery.Enqueue(newNode);
+                }
+            }
+
+            queried.Add(node.Id);
+            closestNodes = closestNodes
+                .Concat(newNodes)
+                .OrderBy(n => n.Id.Distance(targetId))
+                .Take(RoutingTable.K)
+                .ToList();
+        }
+
+        return closestNodes;
+    }
+
+    private async UniTask SimulateNetworkDelay()
+    {
+        await UniTask.Delay(new Random().Next(10, 100)); // 10-100ms のランダムな遅延
     }
 }
 
