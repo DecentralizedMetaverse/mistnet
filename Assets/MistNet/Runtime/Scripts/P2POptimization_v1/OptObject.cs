@@ -1,25 +1,31 @@
-using MistNet;
 using MistNet.Runtime.Scripts.Utils;
 using UnityEngine;
 
-/// <summary>
-/// このComponentを持つGameObjectはP2P最適化の対象となる
-/// </summary>
-[RequireComponent(typeof(MistSyncObject))]
-public class OptObject : MonoBehaviour
+namespace MistNet.Opt
 {
-    private MistSyncObject _syncObject;
-
-    private void Start()
+    /// <summary>
+    /// このComponentを持つGameObjectはP2P最適化の対象となる
+    /// </summary>
+    [RequireComponent(typeof(MistSyncObject))]
+    public class OptObject : MonoBehaviour
     {
-        _syncObject = GetComponent<MistSyncObject>();
-    }
+        private MistSyncObject _syncObject;
+        private (int, int, int) _chunk;
 
-    private void Update()
-    {
-        if (!_syncObject.IsOwner) return;
+        private void Start()
+        {
+            _syncObject = GetComponent<MistSyncObject>();
+        }
 
-        // Chunkの計算
-        var (x, y ,z) = MistUtils.GetChunk(transform.position);
+        private void Update()
+        {
+            if (!_syncObject.IsOwner) return;
+
+            // Chunkの計算
+            var (x, y, z) = MistUtils.GetChunk(transform.position);
+            if (_chunk == (x, y, z)) return;
+            _chunk = (x, y, z);
+            OptLayer.I.OnChangedChunk(_chunk);
+        }
     }
 }

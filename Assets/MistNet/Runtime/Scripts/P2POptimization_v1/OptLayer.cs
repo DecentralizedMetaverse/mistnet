@@ -1,51 +1,113 @@
+using System;
+using System.Collections.Generic;
 using System.Text;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
-public class OptLayer : MonoBehaviour
+namespace MistNet.Opt
 {
-    [ContextMenu("RunOptLayer")]
-    async void Start()
+    public class OptLayer : MonoBehaviour
     {
-        // ノードの作成
-        var selfNodeId = new NodeId("self-node");
-        var selfNode = new Node(selfNodeId, "127.0.0.1");
+        private const float UpdateTimeSec = 3.0f;
+        public static OptLayer I { get; private set; }
 
-        var kademlia = new Kademlia(selfNode);
+        private Kademlia _kademlia;
 
-        // 他のノードを追加
-        var otherNodeId1 = new NodeId("other-node-1");
-        var otherNode1 = new Node(otherNodeId1, "127.0.0.2");
-        kademlia.RoutingTable.AddNode(otherNode1);
+        // 同じChunkに属するノードのIDを保存する
+        private readonly Dictionary<(int, int, int), HashSet<string>> _chunkNodes = new();
+        private (int, int, int) _chunk;
 
-        var otherNodeId2 = new NodeId("other-node-2");
-        var otherNode2 = new Node(otherNodeId2, "127.0.0.3");
-        kademlia.RoutingTable.AddNode(otherNode2);
-
-        // データの保存
-        string key = "sample-key";
-        string value = "Hello, Kademlia!";
-        bool storeResult = await kademlia.StoreAsync(key, value);
-        Debug.Log($"Store result: {storeResult}");
-
-        // データの検索
-        var (foundValue, found) = await kademlia.FindValueAsync(key);
-        if (found)
+        private void Awake()
         {
-            Debug.Log($"Found value: {Encoding.UTF8.GetString(foundValue)}");
-        }
-        else
-        {
-            Debug.Log("Value not found");
+            I = this;
         }
 
-        // ノードの検索
-        var targetNodeId = new NodeId("other-node-2");
-        var closestNodes = await kademlia.FindNodeAsync(targetNodeId);
-        Debug.Log("Closest nodes:");
-        foreach (var node in closestNodes)
+        [ContextMenu("RunOptLayer")]
+        private void Start()
         {
-            Debug.Log($"Node ID: {node.Id}, Address: {node.Address}");
+            // ノードの作成
+            OnConnected(MistPeerData.I.SelfId);
+            MistManager.I.OnConnectedAction += OnConnected;
+            UpdateGetChunk(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
+        /// <summary>
+        /// 定期的にChunkデータを取得する
+        /// </summary>
+        private async UniTask UpdateGetChunk(CancellationToken token)
+        {
+            while(!token.IsCancellationRequested)
+            {
+                await UniTask.Delay(TimeSpan.FromSeconds(UpdateTimeSec), cancellationToken: token);
+                var (nodes, found) = await Find(_chunk);
+                if (!found) continue;
+
+                // 他のノードがChunkに存在する場合
+                foreach (var nodeId in nodes)
+                {
+                    _chunkNodes[_chunk].Add(nodeId);
+
+                    if (nodeId == MistPeerData.I.SelfId) continue;
+                    MistManager.I.Connect(nodeId).Forget();
+                }
+            }
+        }
+
+        private void OnDestroy()
+        {
+            MistManager.I.OnConnectedAction -= OnConnected;
+        }
+
+        // --------------------
+
+        private void OnConnected(string id)
+        {
+            var nodeId = new NodeId(id);
+            var node = new Node(nodeId, id); // Addressの代わりにIDを使う
+            if (_kademlia == null) _kademlia = new Kademlia(node);
+            else _kademlia.RoutingTable.AddNode(node);
+        }
+
+        public void OnChangedChunk((int, int, int) chunk)
+        {
+            // 追加
+            _chunkNodes.TryGetValue(chunk, out var nodes);
+            if (nodes == null)
+            {
+                nodes = new HashSet<string>();
+                _chunkNodes.Add(chunk, nodes);
+            }
+
+            nodes.Add(MistPeerData.I.SelfId);
+
+            // 削除
+            _chunkNodes[_chunk].Remove(MistPeerData.I.SelfId);
+            Store(_chunk, _chunkNodes[_chunk]);
+
+            _chunk = chunk;
+            Store(chunk, nodes);
+        }
+
+        // --------------------
+
+        private async UniTask<(HashSet<string>, bool)> Find((int, int, int) chunk)
+        {
+            var (data, found) = await _kademlia.FindValueAsync(ChunkToString(chunk));
+            if (!found) return (null, false);
+
+            var nodes = new HashSet<string>(Encoding.UTF8.GetString(data).Split(','));
+            return (nodes, true);
+        }
+
+        private void Store((int, int, int) chunk, HashSet<string> nodes)
+        {
+            _kademlia.StoreAsync(ChunkToString(chunk), string.Join(",", nodes)).Forget();
+        }
+
+        private string ChunkToString((int, int, int) chunk)
+        {
+            return $"{chunk.Item1},{chunk.Item2},{chunk.Item3}";
+        }
     }
 }
