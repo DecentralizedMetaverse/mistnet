@@ -1,14 +1,16 @@
 using Cysharp.Threading.Tasks;
 using MemoryPack;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace MistNet
 {
     [RequireComponent(typeof(MistSyncObject))]
     public class MistTransform : MonoBehaviour
     {
+        [FormerlySerializedAs("_syncIntervalTimeSecond")]
         [Tooltip("Note: This setting is applicable to all synchronized objects, excluding a player object")]
-        [SerializeField] private float _syncIntervalTimeSecond = 0.1f;
+        [SerializeField] private float syncIntervalTimeSecond = 0.1f;
         
         private MistSyncObject _syncObject;
         private float _time;
@@ -28,12 +30,12 @@ namespace MistNet
             _sendData = new()
             {
                 ObjId = _syncObject.Id,
-                Time = _syncIntervalTimeSecond
+                Time = syncIntervalTimeSecond
             };
 
             if (!_syncObject.IsOwner)
             {
-                _syncIntervalTimeSecond = 0; // まだ受信していないので、同期しない
+                syncIntervalTimeSecond = 0; // まだ受信していないので、同期しない
                 return;
             }
         }
@@ -41,18 +43,6 @@ namespace MistNet
         private void Update()
         {
             if (_sendData == null) return; // 初期化が終わっていない場合は、処理しない
-
-            // if (_syncObject.IsGlobalObject)
-            // {
-            //     Debug.Log($"[Transform][Update] {_sendData.ObjId}");
-            //     UpdateAndSendLocation();
-            //     InterpolationLocation();
-            //
-            //     // 受信時に座標が変わるため、その際の相手への送信を防ぐ
-            //     _previousPosition = transform.position;
-            //     _previousRotation = transform.rotation;
-            //     return;
-            // }
 
             if (_syncObject.IsOwner)
             {
@@ -67,7 +57,7 @@ namespace MistNet
         private void UpdateAndSendLocation()
         {
             _time += Time.deltaTime;
-            if (_time < _syncIntervalTimeSecond) return;
+            if (_time < syncIntervalTimeSecond) return;
             _time = 0;
 
             // 座標が変わっていない場合は、送信しない
@@ -88,8 +78,8 @@ namespace MistNet
             }
 
             if (_syncObject.IsGlobalObject) Debug.Log($"[Transform][Send] {_sendData.ObjId}");
-            if (_syncIntervalTimeSecond == 0) _syncIntervalTimeSecond = 0.1f;
-            _sendData.Time = _syncIntervalTimeSecond;
+            if (syncIntervalTimeSecond == 0) syncIntervalTimeSecond = 0.1f;
+            _sendData.Time = syncIntervalTimeSecond;
             var bytes = MemoryPackSerializer.Serialize(_sendData);
             MistManager.I.SendAll(MistNetMessageType.Location, bytes);
         }
@@ -102,23 +92,23 @@ namespace MistNet
             if (_syncObject.IsGlobalObject) Debug.Log($"[Transform][Receive] {location.ObjId} {location.Position}");
             _receivedPosition = location.Position;
             _receivedRotation = Quaternion.Euler(location.Rotation);
-            _syncIntervalTimeSecond = location.Time;
+            syncIntervalTimeSecond = location.Time;
             // MistDebug.Log($"[{location.ObjId}] Time: {_syncIntervalTimeSecond}");
             _elapsedTime = 0f;
         }
 
         private void InterpolationLocation()
         {
-            if (_syncIntervalTimeSecond == 0) return;
+            if (syncIntervalTimeSecond == 0) return;
             
             // var timeRatio = _elapsedTime / _syncIntervalTimeSecond;
-            var timeRatio = Mathf.Clamp01(_elapsedTime / _syncIntervalTimeSecond);
+            var timeRatio = Mathf.Clamp01(_elapsedTime / syncIntervalTimeSecond);
             _elapsedTime += Time.deltaTime;
             
             transform.position = Vector3.Lerp(transform.position, _receivedPosition, timeRatio);
             transform.rotation = Quaternion.Slerp(transform.rotation, _receivedRotation, timeRatio);
             
-            if (_elapsedTime >= _syncIntervalTimeSecond) _elapsedTime = 0f;
+            if (_elapsedTime >= syncIntervalTimeSecond) _elapsedTime = 0f;
         }
     }
 }
