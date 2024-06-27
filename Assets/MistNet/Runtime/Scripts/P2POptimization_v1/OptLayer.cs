@@ -13,8 +13,7 @@ namespace MistNet.Opt
         private const float UpdateTimeSec = 3.0f;
         public static OptLayer I { get; private set; }
 
-        private readonly Dictionary<string, Node> _nodes = new();
-        private readonly Dictionary<string, NodeId> _nodeIds = new();
+
         private Kademlia _kademlia;
 
         // 同じChunkに属するノードのIDを保存する
@@ -33,85 +32,31 @@ namespace MistNet.Opt
             OnConnected(MistPeerData.I.SelfId);
             MistManager.I.OnConnectedAction += OnConnected;
             UpdateGetChunk(this.GetCancellationTokenOnDestroy()).Forget();
-            _kademlia.SendPing += SendPing;
-            _kademlia.SendStore += SendStore;
-            _kademlia.SendFindNode += SendFindNode;
-            _kademlia.SendFindValue += SendFindValue;
+            _kademlia.SendMessage += SendMessage;
             MistManager.I.AddRPC(MistNetMessageType.Dht, ReceiveDht);
         }
 
         private void OnDestroy()
         {
             MistManager.I.OnConnectedAction -= OnConnected;
-            _kademlia.SendPing -= SendPing;
-            _kademlia.SendStore -= SendStore;
-            _kademlia.SendFindNode -= SendFindNode;
-            _kademlia.SendFindValue -= SendFindValue;
+            _kademlia.SendMessage -= SendMessage;
         }
 
         private void ReceiveDht(byte[] data, string id)
         {
             var receiveData = MemoryPackSerializer.Deserialize<P_Dht>(data);
-            switch (receiveData.Type)
-            {
-                case "Ping":
-                    _kademlia.ReceivePing(GetNode(id));
-                    break;
-                case "Store":
-                    var str  = receiveData.Data.Split('|');
-                    _kademlia.ReceiveStore(GetNode(id), str[0], str[1]);
-                    break;
-                case "FindNode":
-                    _kademlia.ReceiveFindNode(GetNode(id), GetNodeId(receiveData.Data));
-                    break;
-                case "FindValue":
-                    _kademlia.ReceiveFindValue(GetNode(id), receiveData.Data);
-                    break;
-            }
+            _kademlia.ReceiveMessageAsync(id, receiveData.Type, receiveData.Data);
         }
 
-        private void SendPing(Node node)
+        private void SendMessage(string targetId, string type, string data)
         {
             var sendData = new P_Dht
             {
-                Type = "Ping",
-                Data = ""
+                Type = type,
+                Data = data
             };
             var bytes = MemoryPackSerializer.Serialize(sendData);
-            MistManager.I.Send(MistNetMessageType.Dht, bytes, node.Address);
-        }
-
-        private void SendStore(Node node, string key, string value)
-        {
-            var sendData = new P_Dht
-            {
-                Type = "Store",
-                Data = $"{key}|{value}"
-            };
-            var bytes = MemoryPackSerializer.Serialize(sendData);
-            MistManager.I.Send(MistNetMessageType.Dht, bytes, node.Address);
-        }
-
-        private void SendFindNode(Node node, NodeId nodeId)
-        {
-            var sendData = new P_Dht
-            {
-                Type = "FindNode",
-                Data = $"{nodeId.ToString()}"
-            };
-            var bytes = MemoryPackSerializer.Serialize(sendData);
-            MistManager.I.Send(MistNetMessageType.Dht, bytes, node.Address);
-        }
-
-        private void SendFindValue(Node node, string value)
-        {
-            var sendData = new P_Dht
-            {
-                Type = "FindValue",
-                Data = $"{value}"
-            };
-            var bytes = MemoryPackSerializer.Serialize(sendData);
-            MistManager.I.Send(MistNetMessageType.Dht, bytes, node.Address);
+            MistManager.I.Send(MistNetMessageType.Dht, bytes, targetId);
         }
 
         // --------------------
@@ -121,21 +66,21 @@ namespace MistNet.Opt
         /// </summary>
         private async UniTask UpdateGetChunk(CancellationToken token)
         {
-            while(!token.IsCancellationRequested)
-            {
-                await UniTask.Delay(TimeSpan.FromSeconds(UpdateTimeSec), cancellationToken: token);
-                var (nodes, found) = await Find(_chunk);
-                if (!found) continue;
-
-                // 他のノードがChunkに存在する場合
-                foreach (var nodeId in nodes)
-                {
-                    _chunkNodes[_chunk].Add(nodeId);
-
-                    if (nodeId == MistPeerData.I.SelfId) continue;
-                    MistManager.I.Connect(nodeId).Forget();
-                }
-            }
+            // while(!token.IsCancellationRequested)
+            // {
+            //     await UniTask.Delay(TimeSpan.FromSeconds(UpdateTimeSec), cancellationToken: token);
+            //     var (nodes, found) = await Find(_chunk);
+            //     if (!found) continue;
+            //
+            //     // 他のノードがChunkに存在する場合
+            //     foreach (var nodeId in nodes)
+            //     {
+            //         _chunkNodes[_chunk].Add(nodeId);
+            //
+            //         if (nodeId == MistPeerData.I.SelfId) continue;
+            //         MistManager.I.Connect(nodeId).Forget();
+            //     }
+            // }
         }
 
         // --------------------
@@ -145,7 +90,7 @@ namespace MistNet.Opt
             var nodeId = new NodeId(id);
             var node = new Node(nodeId, id); // Addressの代わりにIDを使う
             if (_kademlia == null) _kademlia = new Kademlia(node);
-            else _kademlia.RoutingTable.AddNode(node);
+            else _kademlia.RoutingTable.AddNodeAsync(node).Forget();
         }
 
         public void OnChangedChunk((int, int, int) chunk)
@@ -161,8 +106,11 @@ namespace MistNet.Opt
             nodes.Add(MistPeerData.I.SelfId);
 
             // 削除
-            _chunkNodes[_chunk].Remove(MistPeerData.I.SelfId);
-            Store(_chunk, _chunkNodes[_chunk]);
+            if (_chunkNodes.ContainsKey(_chunk))
+            {
+                _chunkNodes[_chunk].Remove(MistPeerData.I.SelfId);
+                Store(_chunk, _chunkNodes[_chunk]);
+            }
 
             _chunk = chunk;
             Store(chunk, nodes);
@@ -170,18 +118,20 @@ namespace MistNet.Opt
 
         // --------------------
 
-        private async UniTask<(HashSet<string>, bool)> Find((int, int, int) chunk)
-        {
-            var (data, found) = await _kademlia.FindValueAsync(ChunkToString(chunk));
-            if (!found) return (null, false);
-
-            var nodes = new HashSet<string>(Encoding.UTF8.GetString(data).Split(','));
-            return (nodes, true);
-        }
+        // private async UniTask<(HashSet<string>, bool)> Find((int, int, int) chunk)
+        // {
+        //     Debug.Log($"[Debug][OptLayer] Find chunk: {chunk}");
+        //     var (data, found) = _kademlia.FindValueAsync(ChunkToString(chunk));
+        //     if (!found) return (null, false);
+        //
+        //     var nodes = new HashSet<string>(Encoding.UTF8.GetString(data).Split(','));
+        //     return (nodes, true);
+        // }
 
         private void Store((int, int, int) chunk, HashSet<string> nodes)
         {
-            _kademlia.StoreAsync(ChunkToString(chunk), string.Join(",", nodes)).Forget();
+            Debug.Log($"[Debug][OptLayer] Store chunk: {chunk}");
+            _kademlia.StoreAsync(ChunkToString(chunk), string.Join(",", nodes));
         }
 
         private string ChunkToString((int, int, int) chunk)
@@ -191,22 +141,6 @@ namespace MistNet.Opt
 
         // --------------------
 
-        private Node GetNode(string id)
-        {
-            if (!_nodes.TryGetValue(id, out var node))
-            {
-                _nodes.Add(id, new Node(new NodeId(id), id));
-            }
-            return _nodes[id];
-        }
 
-        private NodeId GetNodeId(string id)
-        {
-            if (!_nodeIds.TryGetValue(id, out var nodeId))
-            {
-                _nodeIds.Add(id, new NodeId(id));
-            }
-            return _nodeIds[id];
-        }
     }
 }
