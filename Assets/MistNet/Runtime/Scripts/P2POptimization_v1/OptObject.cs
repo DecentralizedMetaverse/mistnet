@@ -36,6 +36,7 @@ namespace MistNet.Opt
                 if (_chunk == (x, y, z)) continue;
                 _chunk = (x, y, z);
                 OptLayer.I.OnChangedChunk(_chunk);
+                Debug.Log($"[Debug][OptObject] Chunk changed: {_chunk}");
             }
         }
     }
