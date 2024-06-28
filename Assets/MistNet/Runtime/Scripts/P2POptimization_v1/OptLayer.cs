@@ -13,7 +13,6 @@ namespace MistNet.Opt
         private const float UpdateTimeSec = 3.0f;
         public static OptLayer I { get; private set; }
 
-
         private Kademlia _kademlia;
 
         // 同じChunkに属するノードのIDを保存する
@@ -29,6 +28,10 @@ namespace MistNet.Opt
         private void Start()
         {
             // ノードの作成
+            var nodeId = new NodeId(MistPeerData.I.SelfId);
+            var node = new Node(nodeId, MistPeerData.I.SelfId);
+            _kademlia = new Kademlia(node);
+
             OnConnected(MistPeerData.I.SelfId);
             MistManager.I.OnConnectedAction += OnConnected;
             UpdateGetChunk(this.GetCancellationTokenOnDestroy()).Forget();
@@ -66,21 +69,22 @@ namespace MistNet.Opt
         /// </summary>
         private async UniTask UpdateGetChunk(CancellationToken token)
         {
-            // while(!token.IsCancellationRequested)
-            // {
-            //     await UniTask.Delay(TimeSpan.FromSeconds(UpdateTimeSec), cancellationToken: token);
-            //     var (nodes, found) = await Find(_chunk);
-            //     if (!found) continue;
-            //
-            //     // 他のノードがChunkに存在する場合
-            //     foreach (var nodeId in nodes)
-            //     {
-            //         _chunkNodes[_chunk].Add(nodeId);
-            //
-            //         if (nodeId == MistPeerData.I.SelfId) continue;
-            //         MistManager.I.Connect(nodeId).Forget();
-            //     }
-            // }
+            while(!token.IsCancellationRequested)
+            {
+                Debug.Log($"[Debug][OptLayer] UpdateGetChunk");
+                await UniTask.Delay(TimeSpan.FromSeconds(UpdateTimeSec), cancellationToken: token);
+                var (nodes, found) = await Find(_chunk);
+                if (!found) continue;
+
+                // 他のノードがChunkに存在する場合
+                foreach (var nodeId in nodes)
+                {
+                    _chunkNodes[_chunk].Add(nodeId);
+
+                    if (nodeId == MistPeerData.I.SelfId) continue;
+                    MistManager.I.Connect(nodeId).Forget();
+                }
+            }
         }
 
         // --------------------
@@ -89,8 +93,7 @@ namespace MistNet.Opt
         {
             var nodeId = new NodeId(id);
             var node = new Node(nodeId, id); // Addressの代わりにIDを使う
-            if (_kademlia == null) _kademlia = new Kademlia(node);
-            else _kademlia.RoutingTable.AddNodeAsync(node).Forget();
+            _kademlia.RoutingTable.AddNodeAsync(node).Forget();
         }
 
         public void OnChangedChunk((int, int, int) chunk)
@@ -118,15 +121,16 @@ namespace MistNet.Opt
 
         // --------------------
 
-        // private async UniTask<(HashSet<string>, bool)> Find((int, int, int) chunk)
-        // {
-        //     Debug.Log($"[Debug][OptLayer] Find chunk: {chunk}");
-        //     var (data, found) = _kademlia.FindValueAsync(ChunkToString(chunk));
-        //     if (!found) return (null, false);
-        //
-        //     var nodes = new HashSet<string>(Encoding.UTF8.GetString(data).Split(','));
-        //     return (nodes, true);
-        // }
+        private async UniTask<(HashSet<string>, bool)> Find((int, int, int) chunk)
+        {
+            Debug.Log($"[Debug][OptLayer] Find chunk: {chunk}");
+            var (data, found) = await _kademlia.FindValueAsync(ChunkToString(chunk));
+            if (!found) return (null, false);
+
+            Debug.Log($"[Debug][OptLayer] Found chunk: {chunk}");
+            var nodes = new HashSet<string>(Encoding.UTF8.GetString(data).Split(','));
+            return (nodes, true);
+        }
 
         private void Store((int, int, int) chunk, HashSet<string> nodes)
         {
@@ -140,7 +144,5 @@ namespace MistNet.Opt
         }
 
         // --------------------
-
-
     }
 }

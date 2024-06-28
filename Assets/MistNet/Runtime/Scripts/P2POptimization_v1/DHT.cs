@@ -5,19 +5,18 @@ using System.Text;
 using System.Numerics;
 using System.Linq;
 using Cysharp.Threading.Tasks;
+using MistNet;
 using UnityEngine;
-using Random = System.Random;
-using Newtonsoft.Json;
 
 public class NodeId
 {
-    public const int LENGTH = 20; // 160ビット
+    public const int Length = 20; // 160ビット
     private readonly byte[] _id;
 
     public NodeId(byte[] id)
     {
-        if (id.Length != LENGTH)
-            throw new ArgumentException($"ID must be {LENGTH} bytes long", nameof(id));
+        if (id.Length != Length)
+            throw new ArgumentException($"ID must be {Length} bytes long", nameof(id));
         _id = id;
     }
 
@@ -66,16 +65,17 @@ public class RoutingTable
     public const int K = 20; // Kademliaパラメータ: バケットあたりの最大ノード数
     private readonly Node _self;
     private readonly List<Node>[] _buckets;
-    private readonly Func<Node, UniTask<bool>> _pingAsync;
+    public Func<Node, UniTask<bool>> PingAsync;
 
     public RoutingTable(Node self)
     {
         _self = self ?? throw new ArgumentNullException(nameof(self));
-        _buckets = Enumerable.Range(0, NodeId.LENGTH * 8).Select(_ => new List<Node>()).ToArray();
+        _buckets = Enumerable.Range(0, NodeId.Length * 8).Select(_ => new List<Node>()).ToArray();
     }
 
     public async UniTask AddNodeAsync(Node node)
     {
+        Debug.Log($"[Debug] AddNodeAsync selfId: {_self.Id}\nnode: {node.Id}");
         if (node.Id.Equals(_self.Id)) return;
 
         var bucketIndex = GetBucketIndex(_self.Id.Distance(node.Id));
@@ -86,11 +86,13 @@ public class RoutingTable
             var existingNode = bucket.FirstOrDefault(n => n.Id.Equals(node.Id));
             if (existingNode != null)
             {
+                // 同じノードが見つかった場合、先頭に移動
                 bucket.Remove(existingNode);
                 bucket.Insert(0, node);
                 return;
             }
-            else if (bucket.Count < K)
+
+            if (bucket.Count < K)
             {
                 bucket.Insert(0, node);
                 return;
@@ -99,16 +101,14 @@ public class RoutingTable
 
         // バケットが満杯の場合、最後のノードをpingして応答がなければ置き換える
         var lastNode = bucket[^1];
-        var isAlive = await _pingAsync(lastNode);
+        var isAlive = await PingAsync(lastNode);
 
         lock (bucket)
         {
-            if (!isAlive)
-            {
-                bucket.RemoveAt(bucket.Count - 1);
-                bucket.Insert(0, node);
-            }
-            // 最後のノードが生きている場合、新しいノードは追加されない
+            if (isAlive) return; // 最後のノードが生きている場合、新しいノードは追加しない
+
+            bucket.RemoveAt(bucket.Count - 1);
+            bucket.Insert(0, node);
         }
     }
 
@@ -123,7 +123,7 @@ public class RoutingTable
 
     private static int GetBucketIndex(BigInteger distance)
     {
-        return distance == 0 ? 0 : NodeId.LENGTH * 8 - 1 - distance.GetBitLength();
+        return distance == 0 ? 0 : NodeId.Length * 8 - 1 - distance.GetBitLength();
     }
 }
 
@@ -146,7 +146,10 @@ public class Kademlia
     public Kademlia(Node self)
     {
         _self = self;
-        RoutingTable = new RoutingTable(self);
+        RoutingTable = new RoutingTable(self)
+        {
+            PingAsync = PingAsync
+        };
     }
 
     public async UniTask<bool> PingAsync(Node node)
@@ -172,31 +175,56 @@ public class Kademlia
         var closestNodes = RoutingTable.GetClosestNodes(targetId, RoutingTable.K);
         var queried = new HashSet<NodeId>();
         var toQuery = new Queue<Node>(closestNodes);
+        const int maxIterations = 10; // 最大の問い合わせ回数を設定
+        int iterations = 0;
 
-        while (toQuery.Count > 0)
+        Debug.Log($"[Debug] FindNodeAsync selfId: {MistPeerData.I.SelfId}\ntarget: {targetId}");
+        foreach (var node in closestNodes)
+        {
+            Debug.Log($"[Debug] FindNodeAsync queried: {node.Id}");
+        }
+
+        while (toQuery.Count > 0 && iterations < maxIterations)
         {
             var node = toQuery.Dequeue();
             if (queried.Contains(node.Id)) continue;
 
             SendMessage(node.Address, "FIND_NODE", targetId.ToString());
 
-            // 応答を待つ必要がある
             _pendingFindNodeRequests[node.Address] = new UniTaskCompletionSource<List<Node>>();
-            var nodes = await _pendingFindNodeRequests[node.Address].Task;
-            foreach (var newNode in nodes)
+
+            List<Node> nodes;
+            try
             {
-                if (!queried.Contains(newNode.Id))
-                {
-                    toQuery.Enqueue(newNode);
-                }
+                // タイムアウトの設定
+                nodes = await _pendingFindNodeRequests[node.Address].Task.Timeout(TimeSpan.FromSeconds(5));
+            }
+            catch (TimeoutException)
+            {
+                // タイムアウトした場合は次のノードへ
+                continue;
             }
 
-            queried.Add(node.Id);
+            lock (queried)
+            {
+                foreach (var newNode in nodes)
+                {
+                    if (!queried.Contains(newNode.Id))
+                    {
+                        toQuery.Enqueue(newNode);
+                    }
+                }
+
+                queried.Add(node.Id);
+            }
+
             closestNodes = closestNodes
                 .Concat(nodes)
                 .OrderBy(n => n.Id.Distance(targetId))
                 .Take(RoutingTable.K)
                 .ToList();
+
+            iterations++;
         }
 
         return closestNodes;
@@ -205,6 +233,7 @@ public class Kademlia
     public async UniTask<(byte[], bool)> FindValueAsync(string key)
     {
         var keyId = GetNodeId(key);
+        Debug.Log($"[Debug] FindValueAsync key: {key} -> {keyId}");
 
         if (_dataStore.TryGetValue(keyId, out var value))
         {
@@ -212,13 +241,17 @@ public class Kademlia
         }
 
         // 見つからない場合、最も近いノードに問い合わせる
+        Debug.Log($"[Debug] FindValueAsync Cannot find value for key: {key}");
         var nodes = await FindNodeAsync(keyId);
+        Debug.Log($"[Debug] FindValueAsync debug: {nodes.Count} nodes found for key: {key}");
         foreach (var node in nodes)
         {
+            Debug.Log($"[Debug] FindValueAsync Querying node: {node.Address}");
             SendMessage(node.Address, "FIND_VALUE", key);
             // 応答があるまで待つ
             _pendingFindValueRequests[node.Address] = new UniTaskCompletionSource<(byte[], bool)>();
             var (data, found) = await _pendingFindValueRequests[node.Address].Task;
+
             if (found)
             {
                 return (data, true);
