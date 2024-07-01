@@ -28,6 +28,7 @@ namespace MistNet
         {
             foreach (var peerData in _dict.Values)
             {
+                if (peerData.Peer == null) continue;
                 peerData.Peer.Close();
             }
         }

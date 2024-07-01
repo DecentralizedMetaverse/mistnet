@@ -5,33 +5,66 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
+using System.Net.Sockets;
 
 namespace MistNet
 {
-    /// <summary>
-    /// NOTE: エラー文を出してくれない　別スレッドを含むプログラムであるからだと考えられる
-    /// </summary>
     public class MistSignalingServer : MonoBehaviour
     {
-        private static readonly int Port = 8080;
+        private static readonly int DefaultPort = 8080;
         [SerializeField] private bool isServerMode = false;
         private WebSocketServer _webSocketServer;
 
-        private void Awake()
+        private void Start()
         {
             if (!isServerMode) return;
-            
-            _webSocketServer = new WebSocketServer(Port);
+
+            int port = FindAvailablePort(DefaultPort);
+            if (port == -1)
+            {
+                MistDebug.LogError("[MistSignalingServer] No available port found.");
+                return;
+            }
+
+            _webSocketServer = new WebSocketServer(port);
             _webSocketServer.AddWebSocketService<MistWebSocketBehavior>("/ws");
             _webSocketServer.Start();
-            MistDebug.Log($"[MistSignalingServer] Start {Port}");
+            MistDebug.Log($"[MistSignalingServer] Start on port {port}");
         }
 
         private void OnDestroy()
         {
             if (_webSocketServer == null) return;
             _webSocketServer.Stop();
-            MistDebug.Log($"[MistSignalingServer] Stop {Port}");
+            MistDebug.Log($"[MistSignalingServer] Stop");
+        }
+
+        private int FindAvailablePort(int startingPort)
+        {
+            const int maxAttempts = 100;
+            for (int port = startingPort; port < startingPort + maxAttempts; port++)
+            {
+                if (IsPortAvailable(port))
+                {
+                    return port;
+                }
+            }
+            return -1;
+        }
+
+        private bool IsPortAvailable(int port)
+        {
+            try
+            {
+                TcpListener listener = new TcpListener(System.Net.IPAddress.Any, port);
+                listener.Start();
+                listener.Stop();
+                return true;
+            }
+            catch (SocketException)
+            {
+                return false;
+            }
         }
 
         private class MistWebSocketBehavior : WebSocketBehavior
@@ -98,6 +131,5 @@ namespace MistNet
                 }
             }
         }
-
     }
 }

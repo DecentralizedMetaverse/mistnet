@@ -275,6 +275,50 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &480031855
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 480031857}
+  - component: {fileID: 480031856}
+  m_Layer: 0
+  m_Name: OptV2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &480031856
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 480031855}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a3c7f9c555f5d6439a95723e8b65279, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &480031857
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 480031855}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -381.67, y: 723, z: -527.08}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &796287280
 GameObject:
   m_ObjectHideFlags: 0
@@ -337,7 +381,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &842117792
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -350,7 +394,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab62af81ea3086a42a67d6c27ea73823, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _syncIntervalTimeSecond: 0.1
+  syncIntervalTimeSecond: 0.1
 --- !u!114 &842117793
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -363,6 +407,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 31de544a0be1bd8448dd603186b8e903, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _isOwner: 1
   MistTransform: {fileID: 0}
   syncIntervalSeconds: 0.5
 --- !u!4 &842117794
@@ -862,7 +907,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d7ae4c79773703c4198ccd734512734f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isServerMode: 0
+  isServerMode: 1
 --- !u!4 &1531781159
 Transform:
   m_ObjectHideFlags: 0
@@ -1124,7 +1169,7 @@ PrefabInstance:
     - target: {fileID: 8750905894533009966, guid: 701c67af5a70dfc45bd6ed39e5d18584,
         type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 7935780440447089082, guid: 701c67af5a70dfc45bd6ed39e5d18584, type: 3}
@@ -1147,3 +1192,4 @@ SceneRoots:
   - {fileID: 878473684}
   - {fileID: 796287282}
   - {fileID: 842117794}
+  - {fileID: 480031857}

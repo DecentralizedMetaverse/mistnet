@@ -7,6 +7,7 @@ public enum MistNetMessageType
     Log,
     ObjectInstantiate,
     ObjectChange,
+    Dht,
     Signaling,
     SignalingRequest,
     SignalingResponse,
