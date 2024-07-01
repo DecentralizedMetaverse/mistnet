@@ -178,10 +178,10 @@ public class Kademlia
         const int maxIterations = 10; // 最大の問い合わせ回数を設定
         int iterations = 0;
 
-        Debug.Log($"[Debug] FindNodeAsync selfId: {MistPeerData.I.SelfId}\ntarget: {targetId}");
+        Debug.Log($"[Debug] FindNodeAsync[0] selfId: {MistPeerData.I.SelfId}\ntarget: {targetId}");
         foreach (var node in closestNodes)
         {
-            Debug.Log($"[Debug] FindNodeAsync queried: {node.Id}");
+            Debug.Log($"[Debug] FindNodeAsync[1] queried: {node.Id}");
         }
 
         while (toQuery.Count > 0 && iterations < maxIterations)
@@ -189,9 +189,11 @@ public class Kademlia
             var node = toQuery.Dequeue();
             if (queried.Contains(node.Id)) continue;
 
+            Debug.Log($"[Debug] FindNodeAsync[2] Querying: {node.Id}");
             SendMessage(node.Address, "FIND_NODE", targetId.ToString());
-
             _pendingFindNodeRequests[node.Address] = new UniTaskCompletionSource<List<Node>>();
+
+            Debug.Log($"[Debug] FindNodeAsync[3] Waiting for response from: {node.Address}");
 
             List<Node> nodes;
             try
@@ -233,7 +235,7 @@ public class Kademlia
     public async UniTask<(byte[], bool)> FindValueAsync(string key)
     {
         var keyId = GetNodeId(key);
-        Debug.Log($"[Debug] FindValueAsync key: {key} -> {keyId}");
+        Debug.Log($"[Debug] FindValueAsync[0] key: {key} -> {keyId}");
 
         if (_dataStore.TryGetValue(keyId, out var value))
         {
@@ -241,17 +243,18 @@ public class Kademlia
         }
 
         // 見つからない場合、最も近いノードに問い合わせる
-        Debug.Log($"[Debug] FindValueAsync Cannot find value for key: {key}");
+        Debug.Log($"[Debug] FindValueAsync[1] Cannot find value for key: {key}");
         var nodes = await FindNodeAsync(keyId);
-        Debug.Log($"[Debug] FindValueAsync debug: {nodes.Count} nodes found for key: {key}");
+        Debug.Log($"[Debug] FindValueAsync[2] debug: {nodes.Count} nodes found for key: {key}");
         foreach (var node in nodes)
         {
-            Debug.Log($"[Debug] FindValueAsync Querying node: {node.Address}");
+            Debug.Log($"[Debug] FindValueAsync[3] Querying node: {node.Address}");
             SendMessage(node.Address, "FIND_VALUE", key);
             // 応答があるまで待つ
             _pendingFindValueRequests[node.Address] = new UniTaskCompletionSource<(byte[], bool)>();
             var (data, found) = await _pendingFindValueRequests[node.Address].Task;
 
+            Debug.Log($"[Debug] FindValueAsync[4] Found value for key: {key}");
             if (found)
             {
                 return (data, true);
